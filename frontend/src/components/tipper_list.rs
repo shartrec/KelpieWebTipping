@@ -1,9 +1,33 @@
+/*
+ * Copyright (c) 2025. Trevor Campbell and others.
+ *
+ * This file is part of KelpieRustWeb.
+ *
+ * KelpieRustWeb is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License,or
+ * (at your option) any later version.
+ *
+ * KelpieRustWeb is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with KelpieRustWeb; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * Contributors:
+ *      Trevor Campbell
+ *
+ */
+
 // frontend/src/components/tipper_list.rs
 use yew::prelude::*;
 use gloo_net::http::Request;
 use serde_json::json;
 
-use crate::models::tipper::Tipper;
+use crate::models::tippers::Tipper;
 
 #[function_component(TipperList)]
 pub fn tipper_list() -> Html {
@@ -44,18 +68,19 @@ pub fn tipper_list() -> Html {
                     "email": (*email).clone(),
                 });
 
-                if let Ok(resp) = Request::post("/api/tippers")
+                if let Ok(req) = Request::post("/api/tippers")
                     .header("Content-Type", "application/json")
                     .body(payload.to_string())
-                    .send()
-                    .await
                 {
-                    if let Ok(new_tipper) = resp.json::<Tipper>().await {
-                        let mut new_list = (*tippers).clone();
-                        new_list.push(new_tipper);
-                        tippers.set(new_list);
-                        name.set(String::new());
-                        email.set(String::new());
+                    if let Ok(resp) = req.send().await
+                    {
+                        if let Ok(new_tipper) = resp.json::<Tipper>().await {
+                            let mut new_list = (*tippers).clone();
+                            new_list.push(new_tipper);
+                            tippers.set(new_list);
+                            name.set(String::new());
+                            email.set(String::new());
+                        }
                     }
                 }
             });

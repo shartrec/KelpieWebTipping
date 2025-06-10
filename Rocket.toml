@@ -1,0 +1,6 @@
+[default]
+address = "127.0.0.1"
+port = 8000
+
+[default.databases.kelpie_db]
+url = "postgres://shartrec:laverda21@localhost:5432/kelpie_tips"

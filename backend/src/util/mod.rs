@@ -22,4 +22,28 @@
  *
  */
 
-pub(crate) mod tippers;
+pub(crate) mod logging;
+
+use rocket::http::Status;
+use rocket_db_pools::sqlx;
+
+#[derive(Debug)]
+pub enum ApiError {
+    Db(sqlx::Error),
+    NotFound(&'static str),
+}
+
+impl From<sqlx::Error> for ApiError {
+    fn from(err: sqlx::Error) -> Self {
+        ApiError::Db(err)
+    }
+}
+
+impl<'r> rocket::response::Responder<'r, 'static> for ApiError {
+    fn respond_to(self, _: &'r rocket::Request<'_>) -> rocket::response::Result<'static> {
+        match self {
+            ApiError::Db(_) => Err(Status::InternalServerError),
+            ApiError::NotFound(_) => Err(Status::NotFound),
+        }
+    }
+}

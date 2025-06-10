@@ -22,4 +22,15 @@
  *
  */
 
-pub(crate) mod tippers;
+use tracing_subscriber::{fmt, EnvFilter};
+use tracing_appender::rolling;
+pub fn setup_logging() {
+    let file_appender = rolling::daily("logs", "rocket_app.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .with_writer(non_blocking) // or .with_writer(std::io::stdout)
+        .pretty()
+        .init();
+}

@@ -1,40 +1,75 @@
+/*
+ * Copyright (c) 2025. Trevor Campbell and others.
+ *
+ * This file is part of KelpieRustWeb.
+ *
+ * KelpieRustWeb is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License,or
+ * (at your option) any later version.
+ *
+ * KelpieRustWeb is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with KelpieRustWeb; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * Contributors:
+ *      Trevor Campbell
+ *
+ */
+
 // backend/src/routes/tippers.rs
 use rocket::serde::json::Json;
 use rocket::State;
+use sqlx::PgPool;
 use crate::models::tipper::Tipper;
 use tokio::sync::Mutex;
-use crate::TipperStore;
+use crate::{models, DbTips};
+use crate::models::tipper;
+use crate::routes::tippers;
+use crate::util::ApiError;
+
+use rocket_db_pools::{Database, Connection};
+use rocket_db_pools::sqlx::{self, Row};
 
 #[get("/api/tippers")]
-pub async fn list(store: &State<TipperStore>) -> Json<Vec<Tipper>> {
-    Json(store.lock().await.clone())
+pub async fn list(mut pool: Connection<DbTips>) ->  Result<Json<Vec<Tipper>>, ApiError> {
+
+    let tippers = tipper::get_all(&mut **pool).await?;
+    Ok(Json(tippers))
 }
 
 #[post("/api/tippers", data = "<tipper>")]
-pub async fn add(tipper: Json<Tipper>, store: &State<TipperStore>) -> Json<Tipper> {
-    let mut tippers = store.lock().await;
-    let mut new = tipper.into_inner();
-    let next_id = tippers.iter().map(|t| t.tipper_id).max().unwrap_or(0) + 1;
-    new.tipper_id = next_id;
-    tippers.push(new.clone());
-    Json(new)
+pub async fn add(tipper: Json<Tipper>, mut pool: Connection<DbTips>) -> Result<Json<Tipper>, ApiError> {
+    let new = tipper::insert(&mut **pool, tipper.name.clone(), tipper.email.clone()).await?;
+    Ok(Json(new))
 }
 
 #[put("/api/tippers/<id>", data = "<tipper>")]
-pub async fn update(id: i32, tipper: Json<Tipper>, store: &State<TipperStore>) -> Option<Json<Tipper>> {
-    let mut store = store.lock().await;
-    if let Some(existing) = store.iter_mut().find(|t| t.tipper_id == id) {
-        existing.name = tipper.name.clone();
-        existing.email = tipper.email.clone();
-        Some(Json(existing.clone()))
+pub async fn update(id: i32, tipper: Json<Tipper>, mut pool: Connection<DbTips>) -> Result<Option<Json<Tipper>>, ApiError> {
+    if let Some(id) = tipper.id {
+        let count = tipper::update(&mut **pool, id, tipper.name.clone(), tipper.email.clone()).await?;
+        match count {
+            0 => {
+                Err(ApiError::NotFound("Row not found"))
+            }
+            1 => {
+                let new = tipper::insert(&mut **pool, tipper.name.clone(), tipper.email.clone()).await?;
+                Ok(Some(Json(new)))
+            },
+            _ => Err(ApiError::NotFound("Ow"))
+        }
     } else {
-        None
+        Ok(None)
     }
 }
 
 #[delete("/api/tippers/<id>")]
-pub async fn delete(id: i32, store: &State<TipperStore>) -> &'static str {
-    let mut store = store.lock().await;
-    store.retain(|t| t.tipper_id != id);
-    "OK"
+pub async fn delete(id: i32, mut pool: Connection<DbTips>) -> Result<&'static str, ApiError> {
+    tipper::delete(&mut **pool, id).await?;
+    Ok("OK")
 }
