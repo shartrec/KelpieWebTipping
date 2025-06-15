@@ -25,4 +25,6 @@
 // pub(crate) mod round;
 // pub(crate) mod game;
 pub(crate) mod tipper;
+pub(crate) mod game;
+pub(crate) mod team;
 // pub(crate) mod tip;

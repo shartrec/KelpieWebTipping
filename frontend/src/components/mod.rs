@@ -22,4 +22,7 @@
  *
  */
 
+pub(crate) mod icons;
+pub(crate) mod icon_button;
 pub(crate) mod tipper_list;
+pub(crate) mod team_list;

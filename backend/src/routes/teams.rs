@@ -21,62 +21,51 @@
  *      Trevor Campbell
  *
  */
-
-// backend/src/routes/tippers.rs
+use rocket::Route;
 use rocket::serde::json::Json;
-use rocket::{Route, State};
-use sqlx::PgPool;
-use crate::models::tipper::Tipper;
-use tokio::sync::Mutex;
+use rocket_db_pools::{Connection};
 use crate::{models, DbTips};
-use crate::models::tipper;
-use crate::routes::tippers;
+use crate::models::team::Team;
+use crate::models::team;
 use crate::util::ApiError;
-
-use rocket_db_pools::{Database, Connection};
-use rocket_db_pools::sqlx::{self, Row};
 
 pub fn routes() -> Vec<Route> {
     routes![list, add, update, delete]
 }
-
-#[get("/api/tippers")]
-pub async fn list(mut pool: Connection<DbTips>) ->  Result<Json<Vec<Tipper>>, ApiError> {
-
-    let tippers = tipper::get_all(&mut **pool).await?;
-    Ok(Json(tippers))
+#[get("/api/teams")]
+pub async fn list(mut pool: Connection<DbTips>) -> Result<Json<Vec<Team>>, ApiError> {
+    let teams = team::get_all(&mut **pool).await?;
+    Ok(Json(teams))
 }
 
-#[post("/api/tippers", data = "<tipper>")]
-pub async fn add(tipper: Json<Tipper>, mut pool: Connection<DbTips>) -> Result<Json<Tipper>, ApiError> {
-    let new = tipper::insert(&mut **pool, tipper.name.clone(), tipper.email.clone()).await?;
+#[post("/api/teams", data = "<team>")]
+pub async fn add(team: Json<Team>, mut pool: Connection<DbTips>) -> Result<Json<Team>, ApiError> {
+    let new = team::insert(&mut **pool, team.name.clone(), team.nickname.clone()).await?;
     Ok(Json(new))
 }
 
-#[put("/api/tippers/<id>", data = "<tipper>")]
-pub async fn update(id: i32, tipper: Json<Tipper>, mut pool: Connection<DbTips>) -> Result<Json<Tipper>, ApiError> {
-    if let Some(id) = tipper.id {
-        let count = tipper::update(&mut **pool, id, tipper.name.clone(), tipper.email.clone()).await?;
+#[put("/api/teams/<id>", data = "<team>")]
+pub async fn update(id: i32, team: Json<Team>, mut pool: Connection<DbTips>) -> Result<Json<Team>, ApiError> {
+    if let Some(id) = team.id {
+        let count = team::update(&mut **pool, id, team.name.clone(), team.nickname.clone()).await?;
         match count {
-            0 => {
-                Err(ApiError::NotFound("Row not found"))
-            }
+            0 => Err(ApiError::NotFound("Row not found")),
             1 => {
-                if let Some(new) = tipper::get(&mut **pool, id).await? {
+                if let Some(new) = team::get(&mut **pool, id).await? {
                     Ok(Json(new))
                 } else {
                     Err(ApiError::NotFound("Row not found"))
                 }
             },
-            _ => Err(ApiError::NotFound("Ow"))
+            _ => Err(ApiError::NotFound("Unexpected row count"))
         }
     } else {
         Err(ApiError::NotFound("Row not found"))
     }
 }
 
-#[delete("/api/tippers/<id>")]
+#[delete("/api/teams/<id>")]
 pub async fn delete(id: i32, mut pool: Connection<DbTips>) -> Result<&'static str, ApiError> {
-    tipper::delete(&mut **pool, id).await?;
+    team::delete(&mut **pool, id).await?;
     Ok("OK")
 }

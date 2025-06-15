@@ -22,7 +22,7 @@
  *
  */
 
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::EnvFilter;
 use tracing_appender::rolling;
 pub fn setup_logging() {
     let file_appender = rolling::daily("logs", "rocket_app.log");

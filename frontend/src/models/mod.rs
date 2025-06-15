@@ -22,4 +22,5 @@
  *
  */
 
-pub(crate) mod tippers;
+pub(crate) mod tipper;
+pub(crate) mod team;

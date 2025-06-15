@@ -29,11 +29,10 @@ use rocket_db_pools::sqlx::Row;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-
 pub struct Tipper {
-    pub id: Option<i32>,
-    pub name: String,
-    pub email: String,
+    pub(crate) id: Option<i32>,
+    pub(crate) name: String,
+    pub(crate) email: String,
 }
 
 impl Tipper {
@@ -49,7 +48,7 @@ pub async fn insert(pool: &mut PgConnection, name: String, email: String) -> Res
     match result {
         Ok(row) => {
             let id = row.get::<i32, _>(0);
-            Ok(crate::models::tipper::Tipper { id: Some(id), name, email})
+            Ok(Tipper { id: Some(id), name, email})
         },
         Err(e) => {
             error!("Error inserting tipper: {}", e);
@@ -82,9 +81,7 @@ pub async fn delete(pool: &mut PgConnection, id: i32) -> Result<u64, sqlx::Error
         .execute(pool)
         .await;
     match result {
-        Ok(result) => {
-            Ok(result.rows_affected())
-        },
+        Ok(result) => Ok(result.rows_affected()),
         Err(e) => {
             error!("Error deleting tipper: {}", e);
             Err(e)
@@ -92,25 +89,21 @@ pub async fn delete(pool: &mut PgConnection, id: i32) -> Result<u64, sqlx::Error
     }
 }
 
-pub async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<crate::models::tipper::Tipper>, sqlx::Error> {
+pub async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Tipper>, sqlx::Error> {
     let result = sqlx::query("SELECT tipper_id, name, email FROM tippers WHERE tipper_id = $1")
         .bind(id)
         .fetch_optional(pool)
         .await;
     match result {
-        Ok(row) => {
-            match row {
+        Ok(row) =>  match row {
                 Some(row) => {
                     let tipper_id = row.get::<i32, _>(0);
                     let name = row.get::<String, _>(1);
                     let email = row.get::<String, _>(2);
                     Ok(Some(Tipper { id: Some(tipper_id), name, email}))
-                },
-                None => {
-                    Ok(None)
                 }
+                None => Ok(None),
             }
-        },
         Err(e) => {
             error!("Error getting tipper: {}", e);
             Err(e)
@@ -118,7 +111,7 @@ pub async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<crate::model
     }
 }
 
-pub async fn get_all(pool: &mut PgConnection) -> Result<Vec<crate::models::tipper::Tipper>, sqlx::Error> {
+pub async fn get_all(pool: &mut PgConnection) -> Result<Vec<Tipper>, sqlx::Error> {
     let result =
         sqlx::query("SELECT tipper_id, name, email FROM tippers ORDER BY name")
             .fetch_all(pool)

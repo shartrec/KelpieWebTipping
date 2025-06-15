@@ -22,21 +22,17 @@
  *
  */
 
+#[macro_use] extern crate rocket;
 mod routes;
 mod models;
 mod util;
 
-#[macro_use] extern crate rocket;
-
-use rocket::fs::{FileServer, relative};
-use rocket::serde::json::Json;
+use crate::routes::teams;
+use crate::routes::tippers;
+use rocket::fs::{relative, FileServer};
 use rocket::response::content::RawHtml;
-use crate::models::tipper::Tipper;
-use crate::routes::tippers::*;
-use crate::util::logging::setup_logging;
 
-use rocket_db_pools::{Database, Connection};
-use rocket_db_pools::sqlx::{self, Row};
+use rocket_db_pools::{sqlx, Database};
 
 #[derive(Database)]
 #[database("kelpie_db")]
@@ -48,8 +44,9 @@ fn rocket() -> _ {
 
     let rocket = rocket::build()
         .attach(DbTips::init())
-        .mount("/", FileServer::from(relative!("../frontend/dist")))
-        .mount("/", routes![list, add, update, delete]);
+        .mount("/", FileServer::from(relative!("./static")))
+        .mount("/admin", tippers::routes())
+        .mount("/admin", teams::routes());
     rocket
 }
 

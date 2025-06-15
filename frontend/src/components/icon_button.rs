@@ -21,6 +21,29 @@
  *      Trevor Campbell
  *
  */
+use yew::prelude::*;
 
-pub(crate) mod tippers;
-pub(crate) mod teams;
+/// Props for IconButton
+#[derive(Properties, PartialEq)]
+pub struct IconButtonProps {
+    #[prop_or_default]
+    pub label: Option<String>,
+    #[prop_or_default]
+    pub disabled: bool,
+    pub onclick: Callback<MouseEvent>,
+    pub children: Children,
+}
+
+#[function_component(IconButton)]
+pub fn icon_button(props: &IconButtonProps) -> Html {
+    let IconButtonProps { label, disabled, onclick, children } = props;
+
+    html! {
+        <button disabled={*disabled} class="icon-button" {onclick}>
+            <div class="icon">{ for children.iter() }</div>
+        if let Some(lbl) = label {
+            <div class="label">{ label }</div>
+        }
+        </button>
+    }
+}
