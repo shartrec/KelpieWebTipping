@@ -23,6 +23,7 @@
  */
 
 pub(crate) mod logging;
+pub(crate) mod game_allocator;
 
 use rocket::http::Status;
 use rocket::{Request, Response};

@@ -1,0 +1,152 @@
+/*
+ * Copyright (c) 2025. Trevor Campbell and others.
+ *
+ * This file is part of KelpieRustWeb.
+ *
+ * KelpieRustWeb is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License,or
+ * (at your option) any later version.
+ *
+ * KelpieRustWeb is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with KelpieRustWeb; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * Contributors:
+ *      Trevor Campbell
+ *
+ */
+
+use crate::models::round::Round;
+use gloo_net::http::Request;
+use log::debug;
+use yew::prelude::*;
+use crate::components::icon_button::IconButton;
+use crate::components::icons::{add_icon, delete_icon, edit_icon, save_icon, rounds_icon};
+use crate::models::tipper::Tipper;
+use crate::{View, ViewContext};
+
+#[function_component(RoundList)]
+pub fn round_list() -> Html {
+    let view_context = use_context::<ViewContext>().expect("ViewContext not found");
+
+    let error_msg = use_state(|| None::<String>);
+
+    let rounds = use_state(|| vec![]);
+    let name_input = use_state(|| String::new());
+    let nickname_input = use_state(|| String::new());
+
+    // New state for editing
+    let editing_id = use_state(|| None as Option<i32>);
+    let edit_name = use_state(|| String::new());
+    let edit_nickname = use_state(|| String::new());
+
+    // Load rounds
+    {
+        let rounds = rounds.clone();
+        use_effect_with((), move |_| {
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(resp) = Request::get("/admin/api/rounds").send().await {
+                    if let Ok(data) = resp.json::<Vec<Round>>().await {
+                        rounds.set(data);
+                    }
+                }
+            });
+            || ()
+        });
+    }
+
+    fn do_edit(round_id: Option<i32>) {
+        debug!("Editing round with ID: {:?}", round_id);
+        // Add your edit logic here
+    }
+
+    let delete_round = {
+        // Add your delete logic here
+        let rounds = rounds.clone();
+        Callback::from(move |id: i32| {
+            let rounds = rounds.clone();
+            // Show confirm dialog before proceeding
+            if web_sys::window()
+                .and_then(|w| w.confirm_with_message("Are you sure you want to delete this round?\nThis will remove all games and tips for the round.").ok())
+                .unwrap_or(false)
+            {
+                wasm_bindgen_futures::spawn_local(async move {
+                    let url = format!("/admin/api/rounds/{}", id);
+                    let resp = Request::delete(&url).send().await;
+                    if resp.is_ok() {
+                        let updated: Vec<Round> = (*rounds).clone().into_iter().filter(|t| t.round_id.unwrap() != id).collect();
+                        rounds.set(updated);
+                    }
+                });
+            }
+        })
+    };
+
+    let add_game = {
+        let view = view_context.view.clone();
+        Callback::from(move |_| view.set(View::RoundAdd))
+    };
+
+    html! {
+        <div>
+            if let Some(msg) = &*error_msg {
+                <div class="alert">{ &*error_msg }</div>
+            }
+            <h2>{ "Rounds" }</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>{ "Round" }</th>
+                        <th>{ "From" }</th>
+                        <th>{ "To" }</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    { for (*rounds).iter().map(|round| {
+                        let round = round.clone();
+                        let start_date = round.start_date.format("%Y-%m-%d").to_string();
+                        let end_date = round.end_date.format("%Y-%m-%d").to_string();
+                        let delete = {
+                            let delete_round = delete_round.clone();
+                            // Use Callback::from to create a callback that captures the round ID
+                            Callback::from(move |_| {
+                                if let Some(id) = round.round_id {
+                                    delete_round.emit(id);
+                                }
+                            })
+                        };
+                            html! {
+                                <tr key={round.round_id.unwrap_or(-1)}>
+                                    <td>{ &round.round_number }</td>
+                                    <td>{ &start_date }</td>
+                                    <td>{ &end_date }</td>
+                                    <td  class="actions">
+                                        <div class="button-row">
+                                            <IconButton onclick={move |_| do_edit(round.round_id)}>
+                                                { edit_icon() }
+                                            </IconButton>
+                                            <IconButton onclick={delete}>
+                                                { delete_icon() }
+                                            </IconButton>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                    })}
+                </tbody>
+            </table>
+            <div class="button-row">
+                <IconButton label="Add" onclick={add_game}>
+                    { rounds_icon() }
+                </IconButton>
+            </div>
+        </div>
+    }
+}

@@ -27,7 +27,7 @@ mod routes;
 mod models;
 mod util;
 
-use crate::routes::teams;
+use crate::routes::{rounds, teams};
 use crate::routes::tippers;
 use rocket::fs::{relative, FileServer};
 use rocket::response::content::RawHtml;
@@ -46,7 +46,8 @@ fn rocket() -> _ {
         .attach(DbTips::init())
         .mount("/", FileServer::from(relative!("./static")))
         .mount("/admin", tippers::routes())
-        .mount("/admin", teams::routes());
+        .mount("/admin", teams::routes())
+        .mount("/admin", rounds::routes());
     rocket
 }
 

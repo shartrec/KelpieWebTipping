@@ -206,7 +206,7 @@ pub fn tipper_list() -> Html {
                                     })}
                                 />
                             </td>
-                            <td>
+                            <td class="actions">
                             <IconButton onclick={add_tipper}>
                                 { add_icon() }
                             </IconButton>
@@ -241,7 +241,7 @@ pub fn tipper_list() -> Html {
                                             }}
                                         />
                                     </td>
-                                    <td>
+                                    <td class="actions">
                                         <div class="button-row">
                                             <IconButton onclick={save_edit.clone()}>
                                                 { save_icon() }
@@ -268,7 +268,7 @@ pub fn tipper_list() -> Html {
                                 <tr key={tipper.id}>
                                     <td>{ &tipper.name }</td>
                                     <td>{ &tipper.email }</td>
-                                    <td>
+                                    <td class="actions">
                                         <div class="button-row">
                                             <IconButton onclick={start_edit}>
                                                 { edit_icon() }

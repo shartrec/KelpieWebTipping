@@ -23,27 +23,39 @@
  */
 
 use yew::prelude::*;
-use gloo_net::http::Request;
 
 // frontend/src/main.rs
 mod models;
 mod components;
 
-use yew::prelude::*;
 use components::tipper_list::TipperList;
+use crate::components::add_round::AddRound;
 use crate::components::icon_button::IconButton;
-use crate::components::icons::{teams_icon, tippers_icon};
+use crate::components::icons::{rounds_icon, teams_icon, tippers_icon};
+use crate::components::round_list::RoundList;
 use crate::components::team_list::TeamList;
 
 #[derive(PartialEq, Clone)]
 enum View {
     Teams,
     Tippers,
+    Rounds,
+    RoundAdd,
+}
+
+#[derive(PartialEq, Clone)]
+pub struct ViewContext {
+    pub view: UseStateHandle<View>,
 }
 
 #[function_component(App)]
 fn app() -> Html {
     let view = use_state(|| View::Teams);
+
+
+    let view_context = ViewContext {
+        view: view.clone(),
+    };
 
     let set_teams = {
         let view = view.clone();
@@ -53,34 +65,49 @@ fn app() -> Html {
         let view = view.clone();
         Callback::from(move |_| view.set(View::Tippers))
     };
+    let set_rounds = {
+        let view = view.clone();
+        Callback::from(move |_| view.set(View::Rounds))
+    };
 
     html! {
-        <div style="display: flex;">
-            <nav style="width: 80px; background: #f0f0f0; padding: 16px 0;">
-                <IconButton label="Teams" onclick={set_teams}>
-                    { teams_icon() }
-                </IconButton>
-                <IconButton label="Tippers" onclick={set_tippers}>
-                    { tippers_icon() }
-                </IconButton>
-            </nav>
-            <main style="flex: 1; padding: 24px;">
-                <h1 style="display: flex; align-items: center;">
-                    <img src="images/kelpiedog_120x120_transparent.png" alt="Kelpie Logo" style="margin-right: 12px;"/>
-                    { "Football Tipping" }
-                </h1>
-                {
-                    match *view {
-                        View::Teams => html! { <TeamList /> },
-                        View::Tippers => html! { <TipperList /> },
+        <ContextProvider<ViewContext> context={view_context}>
+
+            <div style="display: flex;">
+                <nav style="width: 80px; background: #f0f0f0; padding: 16px 0;">
+                    <IconButton label="Teams" onclick={set_teams}>
+                        { teams_icon() }
+                    </IconButton>
+                    <IconButton label="Tippers" onclick={set_tippers}>
+                        { tippers_icon() }
+                    </IconButton>
+                    <IconButton label="Rounds" onclick={set_rounds}>
+                        { rounds_icon() }
+                    </IconButton>
+                </nav>
+                <main style="flex: 1; padding: 24px;">
+                    <h1 style="display: flex; align-items: center;">
+                        <img src="images/kelpiedog_120x120_transparent.png" alt="Kelpie Logo" style="margin-right: 12px;"/>
+                        <span>{ "Kelpie Footy Tipping" }<span style="font-size:1rem;"><br/>{"by Shartrec"}</span></span>
+
+                    </h1>
+                    {
+                        match *view {
+                            View::Teams => html! { <TeamList /> },
+                            View::Tippers => html! { <TipperList /> },
+                            View::Rounds => html! { <RoundList /> },
+                            View::RoundAdd => html! { <AddRound /> },
+                        }
                     }
-                }
-            </main>
-        </div>
+                </main>
+            </div>
+        </ContextProvider<ViewContext>>
+
     }
 }
 
 fn main() {
+    console_log::init_with_level(log::Level::Debug).expect("error initializing logger");
     yew::Renderer::<App>::new().render();
 }
 

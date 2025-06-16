@@ -21,10 +21,10 @@
  *      Trevor Campbell
  *
  */
-// pub(crate) mod team;
-// pub(crate) mod round;
-// pub(crate) mod game;
-pub(crate) mod tipper;
+
 pub(crate) mod game;
+pub(crate) mod round;
 pub(crate) mod team;
+pub(crate) mod tipper;
+pub(crate) mod tip;
 // pub(crate) mod tip;

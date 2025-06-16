@@ -27,7 +27,7 @@ use gloo_net::http::Request;
 use serde_json::json;
 use yew::prelude::*;
 use crate::components::icon_button::IconButton;
-use crate::components::icons::{add_icon, cancel_icon, delete_icon, edit_icon, save_icon, teams_icon};
+use crate::components::icons::{add_icon, cancel_icon, delete_icon, edit_icon, save_icon};
 
 #[function_component(TeamList)]
 pub fn team_list() -> Html {
@@ -253,7 +253,7 @@ pub fn team_list() -> Html {
                                             }}
                                         />
                                     </td>
-                                    <td>
+                                    <td class="actions">
                                         <div class="button-row">
                                             <IconButton onclick={save_edit.clone()}>
                                                 { save_icon() }
@@ -281,7 +281,7 @@ pub fn team_list() -> Html {
                                 <tr key={team.id}>
                                     <td>{ &team.name }</td>
                                     <td>{ &team.nickname }</td>
-                                    <td>
+                                    <td class="actions">
                                         <div class="button-row">
                                             <IconButton onclick={start_edit}>
                                                 { edit_icon() }
