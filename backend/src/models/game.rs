@@ -27,10 +27,7 @@ use rocket_db_pools::sqlx;
 use rocket_db_pools::sqlx::PgConnection;
 use rocket_db_pools::sqlx::Row;
 
-use std::cell::RefCell;
-use std::sync::{Arc, RwLock};
 use rocket::serde::{Deserialize, Serialize};
-use sqlx::{Postgres, Transaction};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Game {

@@ -130,7 +130,7 @@ pub fn team_list(props: &TeamListProps) -> Html {
             wasm_bindgen_futures::spawn_local(async move {
                 if let Some(id) = *id {
                     let payload = json!({ "id": id, "name": (*name).clone() , "nickname": (*nickname).clone() });
-                    let url = format!("/admin/api/teams/{}", id);
+                    let url = "/admin/api/teams";
                     if let Ok(req) = Request::put(&url)
                         .header("Content-Type", "application/json")
                         .body(payload.to_string()) {

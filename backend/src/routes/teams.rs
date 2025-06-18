@@ -24,7 +24,7 @@
 use crate::models::team;
 use crate::models::team::Team;
 use crate::util::ApiError;
-use crate::{models, DbTips};
+use crate::DbTips;
 use rocket::serde::json::Json;
 use rocket::Route;
 use rocket_db_pools::Connection;
@@ -44,8 +44,8 @@ pub(crate) async fn add(team: Json<Team>, mut pool: Connection<DbTips>) -> Resul
     Ok(Json(new))
 }
 
-#[put("/api/teams/<id>", data = "<team>")]
-pub(crate) async fn update(id: i32, team: Json<Team>, mut pool: Connection<DbTips>) -> Result<Json<Team>, ApiError> {
+#[put("/api/teams", data = "<team>")]
+pub(crate) async fn update(team: Json<Team>, mut pool: Connection<DbTips>) -> Result<Json<Team>, ApiError> {
     if let Some(id) = team.id {
         let count = team::update(&mut **pool, id, team.name.clone(), team.nickname.clone()).await?;
         match count {

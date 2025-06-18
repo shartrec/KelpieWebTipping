@@ -23,7 +23,7 @@
  */
 use crate::models::round::Round;
 use crate::models::team::Team;
-use crate::models::{game, round, team, tip, tipper};
+use crate::models::{game, round, team, tip};
 use crate::util::{game_allocator, ApiError};
 use crate::DbTips;
 use chrono::NaiveDate;
@@ -101,7 +101,7 @@ pub(crate) async fn update_round(mut pool: Connection<DbTips>, new_round: Json<N
     let id = new_round.round_id.unwrap_or(-1);
 
     // Update round
-    let rows = round::update(
+    let _rows = round::update(
         &mut tx,
         new_round.round_id.unwrap_or(-1),
         new_round.round_number,
@@ -174,7 +174,7 @@ pub(crate) async fn get_round(id: i32, mut pool: Connection<DbTips>) -> Result<J
 pub(crate) async fn template_round(mut pool: Connection<DbTips>) -> Result<Json<NewRound>, ApiError> {
     // Get the last defined round and set it as the current round to one week later
     let lr = round::get_last_round(&mut **pool).await?;
-    let mut round =
+    let round =
         if let Some(last_round) = lr {
             let round_number = &last_round.round_number + 1;
             let start = last_round.start_date.add(chrono::Duration::days(7));
@@ -184,7 +184,7 @@ pub(crate) async fn template_round(mut pool: Connection<DbTips>) -> Result<Json<
                 .await?
                 .into_iter()
                 .collect::<Vec<Team>>();
-            let mut game_list = game_allocator::allocate_games(
+            let game_list = game_allocator::allocate_games(
                 -1, // No round ID yet
                 &teams,
                 start,

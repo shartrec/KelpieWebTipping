@@ -22,7 +22,7 @@
  *
  */
 use chrono::NaiveDateTime;
-use sqlx::{PgConnection, Postgres, Transaction};
+use sqlx::PgConnection;
 
 #[derive(Debug)]
 pub(crate) struct Tip {

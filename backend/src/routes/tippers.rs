@@ -24,17 +24,12 @@
 
 use crate::models::tipper;
 use crate::models::tipper::Tipper;
-use crate::routes::tippers;
 use crate::util::ApiError;
-use crate::{models, DbTips};
-// backend/src/routes/tippers.rs
+use crate::DbTips;
 use rocket::serde::json::Json;
-use rocket::{Route, State};
-use sqlx::PgPool;
-use tokio::sync::Mutex;
+use rocket::Route;
 
-use rocket_db_pools::sqlx::{self, Row};
-use rocket_db_pools::{Connection, Database};
+use rocket_db_pools::Connection;
 
 pub(crate) fn routes() -> Vec<Route> {
     routes![list, add, update, delete]
@@ -53,8 +48,8 @@ pub(crate) async fn add(tipper: Json<Tipper>, mut pool: Connection<DbTips>) -> R
     Ok(Json(new))
 }
 
-#[put("/api/tippers/<id>", data = "<tipper>")]
-pub(crate) async fn update(id: i32, tipper: Json<Tipper>, mut pool: Connection<DbTips>) -> Result<Json<Tipper>, ApiError> {
+#[put("/api/tippers", data = "<tipper>")]
+pub(crate) async fn update(tipper: Json<Tipper>, mut pool: Connection<DbTips>) -> Result<Json<Tipper>, ApiError> {
     if let Some(id) = tipper.id {
         let count = tipper::update(&mut **pool, id, tipper.name.clone(), tipper.email.clone()).await?;
         match count {

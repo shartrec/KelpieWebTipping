@@ -22,13 +22,12 @@
  *
  */
 
+use crate::models::game::Game;
+use crate::models::team::Team;
 use chrono::NaiveDate;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use std::collections::{BTreeMap, HashSet};
-use std::ops::Add;
-use crate::models::game::Game;
-use crate::models::team::Team;
+use std::collections::BTreeMap;
 
 pub(crate) fn allocate_games(round_id: i32, teams: &Vec<Team>, start: NaiveDate, end: NaiveDate) -> Vec<Game> {
     // Create a list of days between start and end dates
@@ -76,11 +75,9 @@ pub(crate) fn allocate_games(round_id: i32, teams: &Vec<Team>, start: NaiveDate,
     }
 
     // convert to Game objects
-    let mut game_id = 0; // Placeholder for game ID, should be replaced with actual ID generation logic
     let mut game_objects = Vec::new();
     for (day, day_games) in schedule {
         for (team1, team2) in day_games {
-            game_id -= 1; // Decrement game ID for each game
             game_objects.push(Game {
                 game_id: None,
                 round_id,
@@ -93,51 +90,4 @@ pub(crate) fn allocate_games(round_id: i32, teams: &Vec<Team>, start: NaiveDate,
         }
     }
     game_objects
-}
-
-pub(crate) fn add_extra_game(
-    round_id: i32,
-    teams: &Vec<Team>,
-    start: &NaiveDate,
-    end: &NaiveDate,
-    existing_games: &mut Vec<Game>,
-) {
-    // Build set of existing pairs
-    let mut existing_pairs = HashSet::new();
-    for game in existing_games.iter() {
-        let pair = (game.home_team_id.min(game.away_team_id), game.home_team_id.max(game.away_team_id));
-        existing_pairs.insert(pair);
-    }
-
-    // Find a new pair not already scheduled
-    let mut possible_pairs = Vec::new();
-    for (i, team1) in teams.iter().enumerate() {
-        for team2 in teams.iter().skip(i + 1) {
-            let pair = (team1.id.min(team2.id).unwrap(), team1.id.max(team2.id).unwrap());
-            if !existing_pairs.contains(&pair) {
-                possible_pairs.push((team1, team2));
-            }
-        }
-    }
-
-    if let Some((team1, team2)) = possible_pairs.choose(&mut thread_rng()) {
-        // Pick a day near the middle
-        let mut days = Vec::new();
-        let mut current_date = start.clone();
-        while &current_date <= end {
-            days.push(current_date);
-            current_date = current_date.add(chrono::Duration::days(1));
-        }
-        let mid_day = days[days.len() / 2];
-
-        existing_games.push(Game {
-            game_id: None,
-            round_id,
-            home_team_id: team1.id.unwrap(),
-            away_team_id: team2.id.unwrap(),
-            game_date: mid_day,
-            home_team_score: None,
-            away_team_score: None,
-        });
-    }
 }

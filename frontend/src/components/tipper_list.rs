@@ -126,12 +126,8 @@ pub fn tipper_list() -> Html {
             let editing_id = editing_id.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 if let Some(id) = *id {
-                    let payload = json!({
-                        "id": id,
-                        "name": (*name).clone(),
-                        "email": (*email).clone(),
-                    });
-                    let url = format!("/admin/api/tippers/{}", id);
+                    let payload = json!({"id": id, "name": (*name).clone(), "email": (*email).clone()});
+                    let url = "/admin/api/tippers";
                     if let Ok(req) = Request::put(&url)
                         .header("Content-Type", "application/json")
                         .body(payload.to_string()) {

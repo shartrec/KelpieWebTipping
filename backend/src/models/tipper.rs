@@ -21,7 +21,6 @@
  *      Trevor Campbell
  *
  */
-use std::cell::RefCell;
 use log::error;
 use rocket_db_pools::sqlx;
 use rocket_db_pools::sqlx::PgConnection;

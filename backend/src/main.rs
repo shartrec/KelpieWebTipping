@@ -30,7 +30,6 @@ mod util;
 use crate::routes::{rounds, teams};
 use crate::routes::tippers;
 use rocket::fs::{relative, FileServer};
-use rocket::response::content::RawHtml;
 
 use rocket_db_pools::{sqlx, Database};
 use crate::util::logging::setup_logging;

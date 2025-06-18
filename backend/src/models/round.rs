@@ -21,12 +21,11 @@
  *      Trevor Campbell
  *
  */
-use crate::models::game::Game;
 use chrono::NaiveDate;
 use log::error;
 use rocket::serde::{Deserialize, Serialize};
 use sqlx::postgres::PgRow;
-use sqlx::{PgConnection, PgPool, Row};
+use sqlx::{PgConnection, Row};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Round {
