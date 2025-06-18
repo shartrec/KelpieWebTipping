@@ -29,7 +29,7 @@ use rocket_db_pools::sqlx::Row;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Tipper {
+pub(crate) struct Tipper {
     pub(crate) id: Option<i32>,
     pub(crate) name: String,
     pub(crate) email: String,
@@ -39,7 +39,7 @@ impl Tipper {
 
 }
 
-pub async fn insert(pool: &mut PgConnection, name: String, email: String) -> Result<Tipper, sqlx::Error> {
+pub(crate) async fn insert(pool: &mut PgConnection, name: String, email: String) -> Result<Tipper, sqlx::Error> {
     let result = sqlx::query("INSERT INTO tippers (name, email) VALUES ($1, $2) RETURNING tipper_id")
         .bind(name.clone())
         .bind(email.clone())
@@ -57,7 +57,7 @@ pub async fn insert(pool: &mut PgConnection, name: String, email: String) -> Res
     }
 }
 
-pub async fn update(pool: &mut PgConnection, id: i32, name: String, email: String) -> Result<u64, sqlx::Error> {
+pub(crate) async fn update(pool: &mut PgConnection, id: i32, name: String, email: String) -> Result<u64, sqlx::Error> {
     let result = sqlx::query("UPDATE tippers SET name=$1, email=$2 WHERE tipper_id = $3")
         .bind(name.clone())
         .bind(email.clone())
@@ -75,7 +75,7 @@ pub async fn update(pool: &mut PgConnection, id: i32, name: String, email: Strin
     }
 }
 
-pub async fn delete(pool: &mut PgConnection, id: i32) -> Result<u64, sqlx::Error> {
+pub(crate) async fn delete(pool: &mut PgConnection, id: i32) -> Result<u64, sqlx::Error> {
     let result = sqlx::query("DELETE FROM tippers WHERE tipper_id = $1")
         .bind(id)
         .execute(pool)
@@ -89,7 +89,7 @@ pub async fn delete(pool: &mut PgConnection, id: i32) -> Result<u64, sqlx::Error
     }
 }
 
-pub async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Tipper>, sqlx::Error> {
+pub(crate) async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Tipper>, sqlx::Error> {
     let result = sqlx::query("SELECT tipper_id, name, email FROM tippers WHERE tipper_id = $1")
         .bind(id)
         .fetch_optional(pool)
@@ -111,7 +111,7 @@ pub async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Tipper>, sql
     }
 }
 
-pub async fn get_all(pool: &mut PgConnection) -> Result<Vec<Tipper>, sqlx::Error> {
+pub(crate) async fn get_all(pool: &mut PgConnection) -> Result<Vec<Tipper>, sqlx::Error> {
     let result =
         sqlx::query("SELECT tipper_id, name, email FROM tippers ORDER BY name")
             .fetch_all(pool)

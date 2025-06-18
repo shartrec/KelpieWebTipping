@@ -34,34 +34,34 @@ use rocket_db_pools::Connection;
 use sqlx::{Acquire, PgConnection};
 use std::ops::Add;
 
-pub fn routes() -> Vec<Route> {
+pub(crate) fn routes() -> Vec<Route> {
     routes![add_round, list, delete_round, get_round, update_round, template_round]
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct NewGame {
-    pub home_team_id: i32,
-    pub away_team_id: i32,
-    pub game_date: NaiveDate,
+pub(crate) struct NewGame {
+    pub(crate) home_team_id: i32,
+    pub(crate) away_team_id: i32,
+    pub(crate) game_date: NaiveDate,
 }
 
 #[derive(Serialize, Deserialize, Default)]
-pub struct NewRound {
-    pub round_id: Option<i32>,
-    pub round_number: i32,
-    pub start_date: NaiveDate,
-    pub end_date: NaiveDate,
-    pub games: Vec<NewGame>,
+pub(crate) struct NewRound {
+    pub(crate) round_id: Option<i32>,
+    pub(crate) round_number: i32,
+    pub(crate) start_date: NaiveDate,
+    pub(crate) end_date: NaiveDate,
+    pub(crate) games: Vec<NewGame>,
 }
 
 #[get("/api/rounds")]
-pub async fn list(mut pool: Connection<DbTips>) -> Result<Json<Vec<Round>>, ApiError> {
+pub(crate) async fn list(mut pool: Connection<DbTips>) -> Result<Json<Vec<Round>>, ApiError> {
     let rounds = round::get_all(&mut **pool).await?;
     Ok(Json(rounds))
 }
 
 #[post("/api/rounds", data = "<new_round>")]
-pub async fn add_round(mut pool: Connection<DbTips>, new_round: Json<NewRound>,
+pub(crate) async fn add_round(mut pool: Connection<DbTips>, new_round: Json<NewRound>,
 ) -> Result<Json<Round>, ApiError> {
     let mut tx = pool.begin().await?;
 
@@ -93,7 +93,7 @@ pub async fn add_round(mut pool: Connection<DbTips>, new_round: Json<NewRound>,
 }
 
 #[put("/api/rounds", data = "<new_round>")]
-pub async fn update_round(mut pool: Connection<DbTips>, new_round: Json<NewRound>,
+pub(crate) async fn update_round(mut pool: Connection<DbTips>, new_round: Json<NewRound>,
 ) -> Result<&'static str, ApiError> {
     let mut tx = pool.begin().await?;
 
@@ -128,7 +128,7 @@ pub async fn update_round(mut pool: Connection<DbTips>, new_round: Json<NewRound
 }
 
 #[delete("/api/rounds/<id>")]
-pub async fn delete_round(id: i32, mut pool: Connection<DbTips>) -> Result<&'static str, ApiError> {
+pub(crate) async fn delete_round(id: i32, mut pool: Connection<DbTips>) -> Result<&'static str, ApiError> {
     let mut tx = pool.begin().await?;
 
     // Delete all tips for the round
@@ -143,7 +143,7 @@ pub async fn delete_round(id: i32, mut pool: Connection<DbTips>) -> Result<&'sta
 }
 
 #[get("/api/rounds/<id>")]
-pub async fn get_round(id: i32, mut pool: Connection<DbTips>) -> Result<Json<NewRound>, ApiError> {
+pub(crate) async fn get_round(id: i32, mut pool: Connection<DbTips>) -> Result<Json<NewRound>, ApiError> {
     // Get the last defined round and set it as the current round to one week later
     let round = round::get(&mut **pool, id).await?;
     if let Some(round) = round {
@@ -171,7 +171,7 @@ pub async fn get_round(id: i32, mut pool: Connection<DbTips>) -> Result<Json<New
 }
 
 #[get("/api/template_round")]
-pub async fn template_round(mut pool: Connection<DbTips>) -> Result<Json<NewRound>, ApiError> {
+pub(crate) async fn template_round(mut pool: Connection<DbTips>) -> Result<Json<NewRound>, ApiError> {
     // Get the last defined round and set it as the current round to one week later
     let lr = round::get_last_round(&mut **pool).await?;
     let mut round =

@@ -24,8 +24,8 @@
 
 use tracing_subscriber::EnvFilter;
 use tracing_appender::rolling;
-pub fn setup_logging() {
-    let file_appender = rolling::daily("logs", "rocket_app.log");
+pub(crate) fn setup_logging() {
+    let file_appender = rolling::daily("logs", "kelpietipping.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     tracing_subscriber::fmt()

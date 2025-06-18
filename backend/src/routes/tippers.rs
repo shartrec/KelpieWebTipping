@@ -36,25 +36,25 @@ use tokio::sync::Mutex;
 use rocket_db_pools::sqlx::{self, Row};
 use rocket_db_pools::{Connection, Database};
 
-pub fn routes() -> Vec<Route> {
+pub(crate) fn routes() -> Vec<Route> {
     routes![list, add, update, delete]
 }
 
 #[get("/api/tippers")]
-pub async fn list(mut pool: Connection<DbTips>) ->  Result<Json<Vec<Tipper>>, ApiError> {
+pub(crate) async fn list(mut pool: Connection<DbTips>) ->  Result<Json<Vec<Tipper>>, ApiError> {
 
     let tippers = tipper::get_all(&mut **pool).await?;
     Ok(Json(tippers))
 }
 
 #[post("/api/tippers", data = "<tipper>")]
-pub async fn add(tipper: Json<Tipper>, mut pool: Connection<DbTips>) -> Result<Json<Tipper>, ApiError> {
+pub(crate) async fn add(tipper: Json<Tipper>, mut pool: Connection<DbTips>) -> Result<Json<Tipper>, ApiError> {
     let new = tipper::insert(&mut **pool, tipper.name.clone(), tipper.email.clone()).await?;
     Ok(Json(new))
 }
 
 #[put("/api/tippers/<id>", data = "<tipper>")]
-pub async fn update(id: i32, tipper: Json<Tipper>, mut pool: Connection<DbTips>) -> Result<Json<Tipper>, ApiError> {
+pub(crate) async fn update(id: i32, tipper: Json<Tipper>, mut pool: Connection<DbTips>) -> Result<Json<Tipper>, ApiError> {
     if let Some(id) = tipper.id {
         let count = tipper::update(&mut **pool, id, tipper.name.clone(), tipper.email.clone()).await?;
         match count {
@@ -76,7 +76,7 @@ pub async fn update(id: i32, tipper: Json<Tipper>, mut pool: Connection<DbTips>)
 }
 
 #[delete("/api/tippers/<id>")]
-pub async fn delete(id: i32, mut pool: Connection<DbTips>) -> Result<&'static str, ApiError> {
+pub(crate) async fn delete(id: i32, mut pool: Connection<DbTips>) -> Result<&'static str, ApiError> {
     tipper::delete(&mut **pool, id).await?;
     Ok("OK")
 }

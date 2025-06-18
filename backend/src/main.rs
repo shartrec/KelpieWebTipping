@@ -33,13 +33,15 @@ use rocket::fs::{relative, FileServer};
 use rocket::response::content::RawHtml;
 
 use rocket_db_pools::{sqlx, Database};
+use crate::util::logging::setup_logging;
 
 #[derive(Database)]
 #[database("kelpie_db")]
-pub struct DbTips(sqlx::PgPool);
+pub(crate) struct DbTips(sqlx::PgPool);
 
 #[rocket::launch]
 fn rocket() -> _ {
+    setup_logging();
     tracing::info!("Starting server...");
 
     let rocket = rocket::build()

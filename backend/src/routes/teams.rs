@@ -29,23 +29,23 @@ use rocket::serde::json::Json;
 use rocket::Route;
 use rocket_db_pools::Connection;
 
-pub fn routes() -> Vec<Route> {
+pub(crate) fn routes() -> Vec<Route> {
     routes![list, add, update, delete]
 }
 #[get("/api/teams")]
-pub async fn list(mut pool: Connection<DbTips>) -> Result<Json<Vec<Team>>, ApiError> {
+pub(crate) async fn list(mut pool: Connection<DbTips>) -> Result<Json<Vec<Team>>, ApiError> {
     let teams = team::get_all(&mut **pool).await?;
     Ok(Json(teams))
 }
 
 #[post("/api/teams", data = "<team>")]
-pub async fn add(team: Json<Team>, mut pool: Connection<DbTips>) -> Result<Json<Team>, ApiError> {
+pub(crate) async fn add(team: Json<Team>, mut pool: Connection<DbTips>) -> Result<Json<Team>, ApiError> {
     let new = team::insert(&mut **pool, team.name.clone(), team.nickname.clone()).await?;
     Ok(Json(new))
 }
 
 #[put("/api/teams/<id>", data = "<team>")]
-pub async fn update(id: i32, team: Json<Team>, mut pool: Connection<DbTips>) -> Result<Json<Team>, ApiError> {
+pub(crate) async fn update(id: i32, team: Json<Team>, mut pool: Connection<DbTips>) -> Result<Json<Team>, ApiError> {
     if let Some(id) = team.id {
         let count = team::update(&mut **pool, id, team.name.clone(), team.nickname.clone()).await?;
         match count {
@@ -65,7 +65,7 @@ pub async fn update(id: i32, team: Json<Team>, mut pool: Connection<DbTips>) -> 
 }
 
 #[delete("/api/teams/<id>")]
-pub async fn delete(id: i32, mut pool: Connection<DbTips>) -> Result<&'static str, ApiError> {
+pub(crate) async fn delete(id: i32, mut pool: Connection<DbTips>) -> Result<&'static str, ApiError> {
     team::delete(&mut **pool, id).await?;
     Ok("OK")
 }

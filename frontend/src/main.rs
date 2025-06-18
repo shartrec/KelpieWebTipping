@@ -44,12 +44,12 @@ enum View {
 }
 
 #[derive(PartialEq, Clone)]
-pub struct ViewContext {
+pub(crate) struct ViewContext {
     view: UseStateHandle<View>,
     error_msg: UseStateHandle<Option<String>>,
 }
 impl ViewContext {
-    pub fn set_view(&self, view: View) {
+    pub(crate) fn set_view(&self, view: View) {
         self.error_msg.set(None); // Clear error message when changing view
         self.view.set(view);
     }

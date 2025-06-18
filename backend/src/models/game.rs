@@ -33,17 +33,17 @@ use rocket::serde::{Deserialize, Serialize};
 use sqlx::{Postgres, Transaction};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Game {
-    pub game_id: Option<i32>,
-    pub round_id: i32,
-    pub home_team_id: i32,
-    pub away_team_id: i32,
-    pub game_date: NaiveDate,
-    pub home_team_score: Option<i32>,
-    pub away_team_score: Option<i32>,
+pub(crate) struct Game {
+    pub(crate) game_id: Option<i32>,
+    pub(crate) round_id: i32,
+    pub(crate) home_team_id: i32,
+    pub(crate) away_team_id: i32,
+    pub(crate) game_date: NaiveDate,
+    pub(crate) home_team_score: Option<i32>,
+    pub(crate) away_team_score: Option<i32>,
 }
 
-pub async fn insert(
+pub(crate) async fn insert(
     pool: &mut PgConnection,
     round_id: i32,
     home_team_id: i32,
@@ -78,7 +78,7 @@ pub async fn insert(
 }
 
 
-pub async fn update(
+pub(crate) async fn update(
     pool: &mut PgConnection,
     game_id: i32,
     round_id: i32,
@@ -111,7 +111,7 @@ pub async fn update(
     }
 }
 
-pub async fn delete(pool: &mut PgConnection, game_id: i32) -> Result<u64, sqlx::Error> {
+pub(crate) async fn delete(pool: &mut PgConnection, game_id: i32) -> Result<u64, sqlx::Error> {
     let result = sqlx::query("DELETE FROM games WHERE game_id=$1")
         .bind(game_id)
         .execute(pool)
@@ -125,7 +125,7 @@ pub async fn delete(pool: &mut PgConnection, game_id: i32) -> Result<u64, sqlx::
     }
 }
 
-pub async fn get(pool: &mut PgConnection, game_id: i32) -> Result<Option<Game>, sqlx::Error> {
+pub(crate) async fn get(pool: &mut PgConnection, game_id: i32) -> Result<Option<Game>, sqlx::Error> {
     let result = sqlx::query(
         "SELECT game_id, round_id, home_team_id, away_team_id, game_date, home_team_score, away_team_score \
          FROM games WHERE game_id=$1",
@@ -163,7 +163,7 @@ pub async fn get(pool: &mut PgConnection, game_id: i32) -> Result<Option<Game>, 
     }
 }
 
-pub async fn get_for_round(pool: &mut PgConnection, round_id: i32) -> Result<Vec<Game>, sqlx::Error> {
+pub(crate) async fn get_for_round(pool: &mut PgConnection, round_id: i32) -> Result<Vec<Game>, sqlx::Error> {
     let result = sqlx::query(
         "SELECT game_id, round_id, home_team_id, away_team_id, game_date, home_team_score, away_team_score \
          FROM games WHERE round_id = $1 ORDER BY game_date",
@@ -204,7 +204,7 @@ pub async fn get_for_round(pool: &mut PgConnection, round_id: i32) -> Result<Vec
     }
 }
 
-pub async fn get_all(pool: &mut PgConnection) -> Result<Vec<Game>, sqlx::Error> {
+pub(crate) async fn get_all(pool: &mut PgConnection) -> Result<Vec<Game>, sqlx::Error> {
     let result = sqlx::query(
         "SELECT game_id, round_id, home_team_id, away_team_id, game_date, home_team_score, away_team_score \
          FROM games ORDER BY game_date",

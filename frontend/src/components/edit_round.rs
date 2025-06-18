@@ -301,7 +301,7 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                                 </select>
                             </td>
                             <td>
-                                <input type="number" size="1"
+                                <input type="number" size="3"
                                     value={game.home_score.map_or("".to_string(), |s| s.to_string())}
                                     oninput={Callback::from({
                                     let games = games.clone();
@@ -338,7 +338,7 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                                 </select>
                             </td>
                             <td>
-                                <input type="number" size="1"
+                                <input type="number" size="3"
                                     value={game.away_score.map_or("".to_string(), |s| s.to_string())}
                                     oninput={Callback::from({
                                     let games = games.clone();

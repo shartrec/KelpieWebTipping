@@ -29,14 +29,14 @@ use sqlx::postgres::PgRow;
 use sqlx::{PgConnection, PgPool, Row};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Round {
-    pub round_id: Option<i32>,
-    pub round_number: i32,
-    pub start_date: NaiveDate,
-    pub end_date: NaiveDate,
+pub(crate) struct Round {
+    pub(crate) round_id: Option<i32>,
+    pub(crate) round_number: i32,
+    pub(crate) start_date: NaiveDate,
+    pub(crate) end_date: NaiveDate,
 }
 
-pub async fn insert(pool: &mut PgConnection, round_number: i32, start_date: NaiveDate, end_date: NaiveDate) -> Result<Round, sqlx::Error> {
+pub(crate) async fn insert(pool: &mut PgConnection, round_number: i32, start_date: NaiveDate, end_date: NaiveDate) -> Result<Round, sqlx::Error> {
     let result = sqlx::query(
         "INSERT INTO rounds (round_number, start_date, end_date) VALUES ($1, $2, $3) RETURNING round_id",
     )
@@ -58,7 +58,7 @@ pub async fn insert(pool: &mut PgConnection, round_number: i32, start_date: Naiv
     }
 }
 
-pub async fn update(pool: &mut PgConnection, id: i32, round_number: i32, start_date: NaiveDate, end_date: NaiveDate) -> Result<u64, sqlx::Error> {
+pub(crate) async fn update(pool: &mut PgConnection, id: i32, round_number: i32, start_date: NaiveDate, end_date: NaiveDate) -> Result<u64, sqlx::Error> {
     let result = sqlx::query(
         "UPDATE rounds SET round_number=$1, start_date=$2, end_date=$3 WHERE round_id=$4",
     )
@@ -78,7 +78,7 @@ pub async fn update(pool: &mut PgConnection, id: i32, round_number: i32, start_d
     }
 }
 
-pub async fn delete(pool: &mut PgConnection, id: i32) -> Result<u64, sqlx::Error> {
+pub(crate) async fn delete(pool: &mut PgConnection, id: i32) -> Result<u64, sqlx::Error> {
     let result = sqlx::query("DELETE FROM rounds WHERE round_id=$1")
         .bind(id)
         .execute(pool)
@@ -101,7 +101,7 @@ fn build_round(row: PgRow) -> Round {
     Round{round_id: Some(round_id), round_number, start_date, end_date}
 }
 
-pub async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Round>, sqlx::Error> {
+pub(crate) async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Round>, sqlx::Error> {
     let result = sqlx::query("SELECT round_id, round_number, start_date, end_date FROM rounds WHERE round_id=$1")
         .bind(id)
         .fetch_optional(pool)
@@ -121,7 +121,7 @@ pub async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Round>, sqlx
     }
 }
 
-pub async fn get_last_round (pool: &mut PgConnection) -> Result<Option<Round>, sqlx::Error> {
+pub(crate) async fn get_last_round (pool: &mut PgConnection) -> Result<Option<Round>, sqlx::Error> {
     let result = sqlx::query("SELECT round_id, round_number, start_date, end_date FROM rounds ORDER BY round_number DESC LIMIT 1")
         .fetch_optional(pool)
         .await;
@@ -140,7 +140,7 @@ pub async fn get_last_round (pool: &mut PgConnection) -> Result<Option<Round>, s
     }
 }
 
-pub async fn round_with_number_exists (pool: &mut PgConnection, round_number: i32) -> Result<bool, sqlx::Error> {
+pub(crate) async fn round_with_number_exists (pool: &mut PgConnection, round_number: i32) -> Result<bool, sqlx::Error> {
     let result = sqlx::query("SELECT count(*) FROM rounds WHERE round_number = $1 LIMIT 1")
         .bind(round_number)
         .fetch_one(pool)
@@ -157,7 +157,7 @@ pub async fn round_with_number_exists (pool: &mut PgConnection, round_number: i3
         }
     }
 }
-pub async fn round_with_number_used (pool: &mut PgConnection, round_id: i32, round_number: i32) -> Result<bool, sqlx::Error> {
+pub(crate) async fn round_with_number_used (pool: &mut PgConnection, round_id: i32, round_number: i32) -> Result<bool, sqlx::Error> {
     let result = sqlx::query(
         "SELECT count(*) FROM rounds WHERE round_id != $1 AND round_number = $2 LIMIT 1")
         .bind(round_id)
@@ -177,7 +177,7 @@ pub async fn round_with_number_used (pool: &mut PgConnection, round_id: i32, rou
     }
 }
 
-pub async fn get_all(pool: &mut PgConnection) -> Result<Vec<Round>, sqlx::Error> {
+pub(crate) async fn get_all(pool: &mut PgConnection) -> Result<Vec<Round>, sqlx::Error> {
     let result = sqlx::query("SELECT round_id, round_number, start_date, end_date FROM rounds ORDER BY round_number")
         .fetch_all(pool)
         .await;

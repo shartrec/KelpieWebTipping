@@ -33,7 +33,7 @@ use rocket::{Request, Response};
 use rocket_db_pools::sqlx;
 
 #[derive(Debug)]
-pub enum ApiError {
+pub(crate) enum ApiError {
     Db(sqlx::Error),
     Error(String),
     Invalid(String),
@@ -47,8 +47,8 @@ impl From<sqlx::Error> for ApiError {
 }
 
 #[derive(Debug, Serialize)]
-pub struct ApiErrorMessage {
-    pub error: String,
+pub(crate) struct ApiErrorMessage {
+    pub(crate) error: String,
 }
 
 impl<'r> Responder<'r, 'static> for ApiError {
