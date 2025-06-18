@@ -22,19 +22,19 @@
  *
  */
 
+use crate::models::tipper;
+use crate::models::tipper::Tipper;
+use crate::routes::tippers;
+use crate::util::ApiError;
+use crate::{models, DbTips};
 // backend/src/routes/tippers.rs
 use rocket::serde::json::Json;
 use rocket::{Route, State};
 use sqlx::PgPool;
-use crate::models::tipper::Tipper;
 use tokio::sync::Mutex;
-use crate::{models, DbTips};
-use crate::models::tipper;
-use crate::routes::tippers;
-use crate::util::ApiError;
 
-use rocket_db_pools::{Database, Connection};
 use rocket_db_pools::sqlx::{self, Row};
+use rocket_db_pools::{Connection, Database};
 
 pub fn routes() -> Vec<Route> {
     routes![list, add, update, delete]
@@ -59,19 +59,19 @@ pub async fn update(id: i32, tipper: Json<Tipper>, mut pool: Connection<DbTips>)
         let count = tipper::update(&mut **pool, id, tipper.name.clone(), tipper.email.clone()).await?;
         match count {
             0 => {
-                Err(ApiError::NotFound("Row not found"))
+                Err(ApiError::NotFound("Row not found".to_string()))
             }
             1 => {
                 if let Some(new) = tipper::get(&mut **pool, id).await? {
                     Ok(Json(new))
                 } else {
-                    Err(ApiError::NotFound("Row not found"))
+                    Err(ApiError::NotFound("Row not found".to_string()))
                 }
             },
-            _ => Err(ApiError::NotFound("Ow"))
+            _ => Err(ApiError::Error("Multiple rows updated".to_string()))
         }
     } else {
-        Err(ApiError::NotFound("Row not found"))
+        Err(ApiError::NotFound("Row not found".to_string()))
     }
 }
 

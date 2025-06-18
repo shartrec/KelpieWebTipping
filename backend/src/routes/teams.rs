@@ -21,13 +21,13 @@
  *      Trevor Campbell
  *
  */
-use rocket::Route;
-use rocket::serde::json::Json;
-use rocket_db_pools::{Connection};
-use crate::{models, DbTips};
-use crate::models::team::Team;
 use crate::models::team;
+use crate::models::team::Team;
 use crate::util::ApiError;
+use crate::{models, DbTips};
+use rocket::serde::json::Json;
+use rocket::Route;
+use rocket_db_pools::Connection;
 
 pub fn routes() -> Vec<Route> {
     routes![list, add, update, delete]
@@ -49,18 +49,18 @@ pub async fn update(id: i32, team: Json<Team>, mut pool: Connection<DbTips>) -> 
     if let Some(id) = team.id {
         let count = team::update(&mut **pool, id, team.name.clone(), team.nickname.clone()).await?;
         match count {
-            0 => Err(ApiError::NotFound("Row not found")),
+            0 => Err(ApiError::NotFound("Row not found".to_string())),
             1 => {
                 if let Some(new) = team::get(&mut **pool, id).await? {
                     Ok(Json(new))
                 } else {
-                    Err(ApiError::NotFound("Row not found"))
+                    Err(ApiError::NotFound("Row not found".to_string()))
                 }
             },
-            _ => Err(ApiError::NotFound("Unexpected row count"))
+            _ => Err(ApiError::Error("Unexpected row count".to_string()))
         }
     } else {
-        Err(ApiError::NotFound("Row not found"))
+        Err(ApiError::NotFound("Row not found".to_string()))
     }
 }
 

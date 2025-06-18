@@ -1,8 +1,4 @@
 /target
 /frontend/dist/
-/backend/static/images/favicon.ico
-/backend/static/images/kelpiedog_120x120_transparent.png
-/backend/static/frontend-66eea891b392e170.js
-/backend/static/frontend-66eea891b392e170_bg.wasm
-/backend/static/index.html
-/backend/static/kelpie-d33957fc3b12fbb5.css
+/backend/static/*
+/backend/static/

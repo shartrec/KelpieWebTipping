@@ -22,13 +22,13 @@
  *
  */
 
-// frontend/src/components/tipper_list.rs
-use yew::prelude::*;
-use gloo_net::http::Request;
-use serde_json::json;
 use crate::components::icon_button::IconButton;
 use crate::components::icons::{add_icon, cancel_icon, delete_icon, edit_icon, save_icon};
 use crate::models::tipper::Tipper;
+use gloo_net::http::Request;
+use serde_json::json;
+// frontend/src/components/tipper_list.rs
+use yew::prelude::*;
 
 #[function_component(TipperList)]
 pub fn tipper_list() -> Html {

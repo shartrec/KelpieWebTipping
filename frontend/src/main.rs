@@ -28,46 +28,59 @@ use yew::prelude::*;
 mod models;
 mod components;
 
-use components::tipper_list::TipperList;
-use crate::components::add_round::AddRound;
+use crate::components::edit_round::EditRound;
 use crate::components::icon_button::IconButton;
 use crate::components::icons::{rounds_icon, teams_icon, tippers_icon};
 use crate::components::round_list::RoundList;
 use crate::components::team_list::TeamList;
+use components::tipper_list::TipperList;
 
 #[derive(PartialEq, Clone)]
 enum View {
     Teams,
     Tippers,
     Rounds,
-    RoundAdd,
+    RoundEdit{round_id: Option<i32>},
 }
 
 #[derive(PartialEq, Clone)]
 pub struct ViewContext {
-    pub view: UseStateHandle<View>,
+    view: UseStateHandle<View>,
+    error_msg: UseStateHandle<Option<String>>,
+}
+impl ViewContext {
+    pub fn set_view(&self, view: View) {
+        self.error_msg.set(None); // Clear error message when changing view
+        self.view.set(view);
+    }
 }
 
 #[function_component(App)]
 fn app() -> Html {
     let view = use_state(|| View::Teams);
-
+    let error_msg = use_state(|| None::<String>);
 
     let view_context = ViewContext {
         view: view.clone(),
+        error_msg: error_msg.clone(),
     };
 
     let set_teams = {
-        let view = view.clone();
-        Callback::from(move |_| view.set(View::Teams))
+        let view_context = view_context.clone();
+        Callback::from(move |_| view_context.set_view(View::Teams))
     };
     let set_tippers = {
-        let view = view.clone();
-        Callback::from(move |_| view.set(View::Tippers))
+        let view_context = view_context.clone();
+        Callback::from(move |_| view_context.set_view(View::Tippers))
     };
     let set_rounds = {
-        let view = view.clone();
-        Callback::from(move |_| view.set(View::Rounds))
+        let view_context = view_context.clone();
+        Callback::from(move |_| view_context.set_view(View::Rounds))
+    };
+
+    let set_error_msg = {
+        let error_msg = error_msg.clone();
+        Callback::from(move |msg: Option<String>| error_msg.set(msg))
     };
 
     html! {
@@ -92,11 +105,19 @@ fn app() -> Html {
 
                     </h1>
                     {
+                        if let Some(msg) = &*error_msg {
+                            html! { <div style="color: red;">{ msg }</div> }
+                        } else {
+                            html! {}
+                        }
+                    }
+
+                    {
                         match *view {
-                            View::Teams => html! { <TeamList /> },
+                            View::Teams => html! { <TeamList set_error_msg={set_error_msg.clone()}/> },
                             View::Tippers => html! { <TipperList /> },
                             View::Rounds => html! { <RoundList /> },
-                            View::RoundAdd => html! { <AddRound /> },
+                            View::RoundEdit{round_id} => html! { <EditRound set_error_msg={set_error_msg.clone()} round_id={round_id}/> },
                         }
                     }
                 </main>

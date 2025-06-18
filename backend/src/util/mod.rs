@@ -26,16 +26,18 @@ pub(crate) mod logging;
 pub(crate) mod game_allocator;
 
 use rocket::http::Status;
-use rocket::{Request, Response};
 use rocket::response::Responder;
 use rocket::serde::json::Json;
 use rocket::serde::Serialize;
+use rocket::{Request, Response};
 use rocket_db_pools::sqlx;
 
 #[derive(Debug)]
 pub enum ApiError {
     Db(sqlx::Error),
-    NotFound(&'static str),
+    Error(String),
+    Invalid(String),
+    NotFound(String),
 }
 
 impl From<sqlx::Error> for ApiError {
@@ -52,9 +54,10 @@ pub struct ApiErrorMessage {
 impl<'r> Responder<'r, 'static> for ApiError {
     fn respond_to(self, _: &'r Request<'_>) -> rocket::response::Result<'static> {
         let (status, msg) = match self {
-            ApiError::NotFound(msg) => (Status::NotFound, msg.to_string()),
+            ApiError::NotFound(msg) => (Status::NotFound, msg),
+            ApiError::Error(msg) => (Status::InternalServerError, msg),
+            ApiError::Invalid(msg) => (Status::BadRequest, msg),
             ApiError::Db(e) => (Status::Conflict, e.to_string()),
-            // Add other variants as needed
         };
         let body = Json(ApiErrorMessage { error: msg });
         Response::build()

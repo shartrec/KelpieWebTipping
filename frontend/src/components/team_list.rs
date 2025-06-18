@@ -22,17 +22,20 @@
  *
  */
 
+use crate::components::icon_button::IconButton;
+use crate::components::icons::{add_icon, cancel_icon, delete_icon, edit_icon, save_icon};
 use crate::models::team::Team;
 use gloo_net::http::Request;
 use serde_json::json;
 use yew::prelude::*;
-use crate::components::icon_button::IconButton;
-use crate::components::icons::{add_icon, cancel_icon, delete_icon, edit_icon, save_icon};
+
+#[derive(Properties, PartialEq)]
+pub struct TeamListProps {
+    pub set_error_msg: Callback<Option<String>>,
+}
 
 #[function_component(TeamList)]
-pub fn team_list() -> Html {
-
-    let error_msg = use_state(|| None::<String>);
+pub fn team_list(props: &TeamListProps) -> Html {
 
     let teams = use_state(|| vec![]);
     let name_input = use_state(|| String::new());
@@ -59,7 +62,7 @@ pub fn team_list() -> Html {
     }
 
     // Add team
-    let     add_team = {
+    let add_team = {
         let name_input = name_input.clone();
         let nickname_input = nickname_input.clone();
         let teams = teams.clone();
@@ -150,32 +153,33 @@ pub fn team_list() -> Html {
     // Delete team
     let delete_team = {
         let teams = teams.clone();
-        let error_msg = error_msg.clone();
+        let set_error_msg = props.set_error_msg.clone();
         Callback::from(move |id: i32| {
             let teams = teams.clone();
-            let error_msg = error_msg.clone();
+            let set_error_msg = set_error_msg.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 let url = format!("/admin/api/teams/{}", id);
                 match Request::delete(&url).send().await {
                     Ok(resp) => {
                         if resp.ok() {
+                            set_error_msg.emit(None);
                             let new_list: Vec<Team> = (*teams).iter().filter(|t| t.id != id).cloned().collect();
                             teams.set(new_list);
                         } else {
                             let status = resp.status();
                             match resp.text().await {
                                 Ok(text) => {
-                                    error_msg.set(Some(format!("Delete failed ({}): {}", status, text)));
+                                    set_error_msg.emit(Some(format!("Delete failed ({}): {}", status, text)));
                                 }
                                 Err(e) => {
-                                    error_msg.set(Some(format!("Delete failed ({}): {}", status, e)));
+                                    set_error_msg.emit(Some(format!("Delete failed ({}): {}", status, e)));
                                 }
                             }
                         }
                     },
                     Err(e) => {
                         println!("I got an error");
-                        error_msg.set(Some(format!("Error: {}", e)));
+                        set_error_msg.emit(Some(format!("Error: {}", e)));
                     }
                 }
             });
@@ -184,9 +188,6 @@ pub fn team_list() -> Html {
 
     html! {
         <div>
-            if let Some(msg) = &*error_msg {
-                <div class="alert">{ &*error_msg }</div>
-            }
             <h2>{ "Teams" }</h2>
             <table>
                 <thead>

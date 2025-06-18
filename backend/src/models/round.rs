@@ -21,12 +21,12 @@
  *      Trevor Campbell
  *
  */
+use crate::models::game::Game;
 use chrono::NaiveDate;
 use log::error;
 use rocket::serde::{Deserialize, Serialize};
-use sqlx::{PgConnection, PgPool, Row};
 use sqlx::postgres::PgRow;
-use crate::models::game::Game;
+use sqlx::{PgConnection, PgPool, Row};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Round {
@@ -132,6 +132,43 @@ pub async fn get_last_round (pool: &mut PgConnection) -> Result<Option<Round>, s
                 Ok(Some(build_round(row)))
             }
             None => Ok(None),
+        },
+        Err(e) => {
+            error!("Error getting round: {}", e);
+            Err(e)
+        }
+    }
+}
+
+pub async fn round_with_number_exists (pool: &mut PgConnection, round_number: i32) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query("SELECT count(*) FROM rounds WHERE round_number = $1 LIMIT 1")
+        .bind(round_number)
+        .fetch_one(pool)
+        .await;
+
+    match result {
+        Ok(row) => {
+            let count: i64 = row.get(0);
+            Ok(count > 0)
+        },
+        Err(e) => {
+            error!("Error getting round: {}", e);
+            Err(e)
+        }
+    }
+}
+pub async fn round_with_number_used (pool: &mut PgConnection, round_id: i32, round_number: i32) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query(
+        "SELECT count(*) FROM rounds WHERE round_id != $1 AND round_number = $2 LIMIT 1")
+        .bind(round_id)
+        .bind(round_number)
+        .fetch_one(pool)
+        .await;
+
+    match result {
+        Ok(row) => {
+            let count: i64 = row.get(0);
+            Ok(count > 0)
         },
         Err(e) => {
             error!("Error getting round: {}", e);

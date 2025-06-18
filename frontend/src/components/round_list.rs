@@ -22,14 +22,14 @@
  *
  */
 
+use crate::components::icon_button::IconButton;
+use crate::components::icons::{add_icon, delete_icon, edit_icon, rounds_icon, save_icon};
 use crate::models::round::Round;
+use crate::models::tipper::Tipper;
+use crate::{View, ViewContext};
 use gloo_net::http::Request;
 use log::debug;
 use yew::prelude::*;
-use crate::components::icon_button::IconButton;
-use crate::components::icons::{add_icon, delete_icon, edit_icon, save_icon, rounds_icon};
-use crate::models::tipper::Tipper;
-use crate::{View, ViewContext};
 
 #[function_component(RoundList)]
 pub fn round_list() -> Html {
@@ -61,10 +61,10 @@ pub fn round_list() -> Html {
         });
     }
 
-    fn do_edit(round_id: Option<i32>) {
-        debug!("Editing round with ID: {:?}", round_id);
-        // Add your edit logic here
-    }
+    let edit_round= {
+        let view = view_context.view.clone();
+        Callback::from(move |id: i32| view.set(View::RoundEdit{ round_id: Some(id) }))
+    };
 
     let delete_round = {
         // Add your delete logic here
@@ -88,9 +88,9 @@ pub fn round_list() -> Html {
         })
     };
 
-    let add_game = {
+    let add_round = {
         let view = view_context.view.clone();
-        Callback::from(move |_| view.set(View::RoundAdd))
+        Callback::from(move |_| view.set(View::RoundEdit{round_id: None}))
     };
 
     html! {
@@ -122,6 +122,15 @@ pub fn round_list() -> Html {
                                 }
                             })
                         };
+                        let do_edit = {
+                            let edit_round = edit_round.clone();
+                            // Use Callback::from to create a callback that captures the round ID
+                            Callback::from(move |_| {
+                                if let Some(id) = round.round_id {
+                                    edit_round.emit(id);
+                                }
+                            })
+                        };
                             html! {
                                 <tr key={round.round_id.unwrap_or(-1)}>
                                     <td>{ &round.round_number }</td>
@@ -129,7 +138,7 @@ pub fn round_list() -> Html {
                                     <td>{ &end_date }</td>
                                     <td  class="actions">
                                         <div class="button-row">
-                                            <IconButton onclick={move |_| do_edit(round.round_id)}>
+                                            <IconButton onclick={do_edit}>
                                                 { edit_icon() }
                                             </IconButton>
                                             <IconButton onclick={delete}>
@@ -143,7 +152,7 @@ pub fn round_list() -> Html {
                 </tbody>
             </table>
             <div class="button-row">
-                <IconButton label="Add" onclick={add_game}>
+                <IconButton label="Add" onclick={add_round}>
                     { rounds_icon() }
                 </IconButton>
             </div>

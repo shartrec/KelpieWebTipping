@@ -21,15 +21,15 @@
  *      Trevor Campbell
  *
  */
-use chrono::NaiveDate;
 use crate::components::icon_button::IconButton;
 use crate::components::icons::{cancel_icon, delete_icon, games_icon, save_icon, submit_icon};
 use crate::models::team::Team;
+use crate::{View, ViewContext};
+use chrono::NaiveDate;
 use gloo_net::http::Request;
-use log::debug;
+use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use yew::prelude::*;
-use crate::{View, ViewContext};
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 struct NewGame {
@@ -42,19 +42,27 @@ struct NewGame {
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 struct NewRound {
+    round_id: Option<i32>,
     round_number: i32,
     start_date: NaiveDate,
     end_date: NaiveDate,
     games: Vec<NewGame>,
 }
 
-#[function_component(AddRound)]
-pub fn add_round() -> Html {
+#[derive(Properties, PartialEq)]
+pub struct EditRoundProps {
+    pub set_error_msg: Callback<Option<String>>,
+    pub round_id: Option<i32>,
+}
+
+#[function_component(EditRound)]
+pub fn edit_round(props: &EditRoundProps) -> Html {
     let view_context = use_context::<ViewContext>().expect("ViewContext not found");
 
     let round = use_state(NewRound::default);
     let games = use_state(|| vec![]);
     let teams = use_state(|| Vec::<Team>::new());
+    let round_id = props.round_id.clone();
 
     // Fetch the teams when the component mounts
     {
@@ -82,26 +90,51 @@ pub fn add_round() -> Html {
 
         let round = round.clone();
         let games = games.clone();
+        let id = props.round_id.clone();
         use_effect_with((), move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                match Request::get("/admin/api/template_round")
-                    .send()
-                    .await
-                {
-                    Ok(response) => {
-                        if let Ok(data) = response.json::<NewRound>().await {
-                            games.set(data.games.clone());
-                            round.set(data);
-                        } else {
-                            debug!("Failed to parse template round response");
+            if let Some(id) = id {
+                wasm_bindgen_futures::spawn_local(async move {
+                    match Request::get(format!("/admin/api/rounds/{}", id.to_string()).as_str())
+                        .send()
+                        .await
+                    {
+                        Ok(response) => {
+                            if let Ok(data) = response.json::<NewRound>().await {
+                                games.set(data.games.clone());
+                                round.set(data);
+                                info!("Fetched round with ID: {}", id);
+                            } else {
+                                debug!("Failed to parse template round response");
+                            }
+                        }
+                        Err(e) => {
+                            debug!("Error fetching template round: {}", e);
                         }
                     }
-                    Err(e) => {
-                        debug!("Error fetching template round: {}", e);
+                });
+                || ()
+            } else {
+                wasm_bindgen_futures::spawn_local(async move {
+                    match Request::get("/admin/api/template_round")
+                        .send()
+                        .await
+                    {
+                        Ok(response) => {
+                            if let Ok(data) = response.json::<NewRound>().await {
+                                games.set(data.games.clone());
+                                round.set(data);
+                                info!("Fetched template round");
+                            } else {
+                                debug!("Failed to parse template round response");
+                            }
+                        }
+                        Err(e) => {
+                            debug!("Error fetching template round: {}", e);
+                        }
                     }
-                }
-            });
-            || ()
+                });
+                || ()
+            }
         });
     }
 
@@ -131,21 +164,51 @@ pub fn add_round() -> Html {
     let on_submit = {
         let round = round.clone();
         let games = games.clone();
+        let set_error_msg = props.set_error_msg.clone();
+        let view_context = view_context.clone();
+
         Callback::from(move |_| {
+            let set_error_msg = set_error_msg.clone();
             let mut round_data = (*round).clone();
             round_data.games = (*games).clone();
+            let view_context = view_context.clone();
+
             wasm_bindgen_futures::spawn_local(async move {
-                let resp = Request::post("/admin/api/rounds")
+                let set_error_msg = set_error_msg.clone();
+                let url = "/admin/api/rounds";
+                let method = if round_id.is_some() {
+                    Request::put(url) // Use PUT for editing
+                } else {
+                    Request::post("/admin/api/rounds") // Use POST for adding
+                };
+
+                match method
                     .header("Content-Type", "application/json")
                     .json(&round_data)
                     .unwrap()
                     .send()
-                    .await;
-                if let Ok(r) = resp {
-                    if r.ok() {
-                        // gloo_dialogs::alert("Round added!");
-                    } else {
-                        // gloo_dialogs::alert("Error adding round.");
+                    .await {
+                    Ok(resp) => {
+                        if resp.ok() {
+                            view_context.set_view(View::Rounds);
+                        } else {
+                            let status = resp.status();
+                            match resp.text().await {
+                                Ok(text) => {
+                                    if status == 400 {
+                                        set_error_msg.emit(Some(format!("Add failed: {}", text)));
+                                    } else {
+                                        set_error_msg.emit(Some(format!("Unexpected error ({}): {}", status, text)));
+                                    }
+                                }
+                                Err(e) => {
+                                    set_error_msg.emit(Some(format!("Unexpected error ({}): {}", status, e)));
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        set_error_msg.emit(Some(format!("Error submitting round: {}", e)));
                     }
                 }
             });
@@ -153,13 +216,18 @@ pub fn add_round() -> Html {
     };
 
     let on_cancel = {
-        let view = view_context.view.clone();
-        Callback::from(move |_| view.set(View::Rounds))
+        let view_context = view_context.clone();
+        Callback::from(move |_| view_context.set_view(View::Rounds))
+    };
+    let h1 = if round_id.is_some() {
+        "Edit Round"
+    } else {
+        "Add Round"
     };
 
     html! {
         <div>
-            <h2>{ "Add a round" }</h2>
+            <h2>{ h1 }</h2>
             <div style="display: flex; gap: 1rem;">
                 <input type="number" placeholder="Round Number"
                     value={round.round_number.to_string()}
@@ -180,7 +248,7 @@ pub fn add_round() -> Html {
                         move |e: InputEvent| {
                             let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
                             let mut r = (*round).clone();
-                            r.start_date = NaiveDate::parse_from_str(value.as_str(), "YYYYMMDD").expect("Invalid date format");
+                            r.start_date = NaiveDate::parse_from_str(value.as_str(), "%Y-%m-%d").expect("Invalid date format");
                             round.set(r);
                         }
                     })}
@@ -192,7 +260,7 @@ pub fn add_round() -> Html {
                         move |e: InputEvent| {
                             let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
                             let mut r = (*round).clone();
-                            r.end_date = NaiveDate::parse_from_str(value.as_str(), "YYYYMMDD").expect("Invalid date format");
+                            r.end_date = NaiveDate::parse_from_str(value.as_str(), "%Y-%m-%d").expect("Invalid date format");
                             round.set(r);
                         }
                     })}
@@ -297,7 +365,7 @@ pub fn add_round() -> Html {
                                         move |e: InputEvent| {
                                             let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
                                             let mut g = (*games).clone();
-                                            g[i].game_date = NaiveDate::parse_from_str(value.as_str(), "YYYYMMDD").expect("Invalid date format");
+                                            g[i].game_date = NaiveDate::parse_from_str(value.as_str(), "%Y-%m-%d").expect("Invalid date format");
                                             games.set(g);
                                         }
                                     })}
@@ -334,5 +402,4 @@ pub fn add_round() -> Html {
                 </div>
         </div>
     }
-
 }
