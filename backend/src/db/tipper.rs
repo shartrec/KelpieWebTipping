@@ -28,10 +28,10 @@ use rocket_db_pools::sqlx::Row;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct Tipper {
-    pub(crate) id: Option<i32>,
-    pub(crate) name: String,
-    pub(crate) email: String,
+pub struct Tipper {
+    pub id: Option<i32>,
+    pub name: String,
+    pub email: String,
 }
 
 impl Tipper {

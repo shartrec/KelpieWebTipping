@@ -25,13 +25,13 @@ use chrono::NaiveDateTime;
 use sqlx::PgConnection;
 
 #[derive(Debug)]
-pub(crate) struct Tip {
-    pub(crate) tip_id: i32,
-    pub(crate) user_id: i32,
-    pub(crate) match_id: i32,
-    pub(crate) predicted_home_score: i32,
-    pub(crate) predicted_away_score: i32,
-    pub(crate) tip_date: Option<NaiveDateTime>,
+pub struct Tip {
+    pub tip_id: Option<i32>,
+    pub user_id: Option<i32>,
+    pub match_id: Option<i32>,
+    pub predicted_home_score: Option<i32>,
+    pub predicted_away_score: Option<i32>,
+    pub tip_date: Option<NaiveDateTime>,
 }
 
 pub(crate) async fn delete_by_round(pool: &mut PgConnection, round_id: i32) -> Result<u64, sqlx::Error> {
