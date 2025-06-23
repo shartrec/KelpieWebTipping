@@ -21,19 +21,12 @@
  *      Trevor Campbell
  *
  */
+use kelpie_models::round::Round;
 use chrono::NaiveDate;
 use log::error;
 use rocket::serde::{Deserialize, Serialize};
 use sqlx::postgres::PgRow;
 use sqlx::{PgConnection, Row};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct Round {
-    pub(crate) round_id: Option<i32>,
-    pub(crate) round_number: i32,
-    pub(crate) start_date: NaiveDate,
-    pub(crate) end_date: NaiveDate,
-}
 
 pub(crate) async fn insert(pool: &mut PgConnection, round_number: i32, start_date: NaiveDate, end_date: NaiveDate) -> Result<Round, sqlx::Error> {
     let result = sqlx::query(

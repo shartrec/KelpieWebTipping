@@ -149,6 +149,7 @@ dependencies = [
  "dirs-next",
  "gettext-rs",
  "home",
+ "kelpie_models",
  "log",
  "preferences",
  "rand",
@@ -614,6 +615,7 @@ dependencies = [
  "chrono",
  "console_log",
  "gloo-net 0.6.0",
+ "kelpie_models",
  "log",
  "serde",
  "serde_json",
@@ -1546,6 +1548,14 @@ checksum = "1cfaf33c695fc6e08064efbc1f72ec937429614f25eef83af942d0e227c3a28f"
 dependencies = [
  "once_cell",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "kelpie_models"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
 ]
 
 [[package]]

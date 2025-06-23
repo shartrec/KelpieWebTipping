@@ -22,29 +22,19 @@
  *
  */
 
-use crate::components::icon_button::IconButton;
-use crate::components::icons::{add_icon, delete_icon, edit_icon, rounds_icon, save_icon};
-use crate::models::round::Round;
-use crate::models::tipper::Tipper;
+use crate::components::icons::{delete_icon, edit_icon, rounds_icon};
 use crate::{View, ViewContext};
 use gloo_net::http::Request;
-use log::debug;
+use kelpie_models::round::Round;
 use yew::prelude::*;
+use crate::components::icon_button::IconButton;
 
 #[function_component(RoundList)]
 pub fn round_list() -> Html {
     let view_context = use_context::<ViewContext>().expect("ViewContext not found");
 
     let error_msg = use_state(|| None::<String>);
-
     let rounds = use_state(|| vec![]);
-    let name_input = use_state(|| String::new());
-    let nickname_input = use_state(|| String::new());
-
-    // New state for editing
-    let editing_id = use_state(|| None as Option<i32>);
-    let edit_name = use_state(|| String::new());
-    let edit_nickname = use_state(|| String::new());
 
     // Load rounds
     {
@@ -94,11 +84,12 @@ pub fn round_list() -> Html {
     };
 
     html! {
-        <div>
+        <div class="content">
             if let Some(msg) = &*error_msg {
-                <div class="alert">{ &*error_msg }</div>
+                <div class="alert">{ msg }</div>
             }
             <h2>{ "Rounds" }</h2>
+            <div class="scrollable-table" style="border-right: 1px solid #ccc;">
             <table>
                 <thead>
                     <tr>
@@ -151,6 +142,7 @@ pub fn round_list() -> Html {
                     })}
                 </tbody>
             </table>
+        </div>
             <div class="button-row">
                 <IconButton label="Add" onclick={add_round}>
                     { rounds_icon() }

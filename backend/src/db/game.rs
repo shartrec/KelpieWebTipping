@@ -21,6 +21,7 @@
  *      Trevor Campbell
  *
  */
+use kelpie_models::game::Game;
 use chrono::NaiveDate;
 use log::error;
 use rocket_db_pools::sqlx;
@@ -28,17 +29,6 @@ use rocket_db_pools::sqlx::PgConnection;
 use rocket_db_pools::sqlx::Row;
 
 use rocket::serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct Game {
-    pub(crate) game_id: Option<i32>,
-    pub(crate) round_id: i32,
-    pub(crate) home_team_id: i32,
-    pub(crate) away_team_id: i32,
-    pub(crate) game_date: NaiveDate,
-    pub(crate) home_team_score: Option<i32>,
-    pub(crate) away_team_score: Option<i32>,
-}
 
 pub(crate) async fn insert(
     pool: &mut PgConnection,
@@ -65,7 +55,7 @@ pub(crate) async fn insert(
     match result {
         Ok(row) => {
             let id = row.get::<i32, _>(0);
-            Ok(Game {game_id: Some(id), round_id, home_team_id, away_team_id, game_date, home_team_score, away_team_score })
+            Ok(Game {game_id: Some(id), round_id: Some(round_id), home_team_id, away_team_id, game_date, home_team_score, away_team_score })
         }
         Err(e) => {
             error!("Error inserting game: {}", e);
@@ -143,7 +133,7 @@ pub(crate) async fn get(pool: &mut PgConnection, game_id: i32) -> Result<Option<
                 let away_team_score = row.get::<Option<i32>, _>(6);
                 Ok(Some(Game {
                     game_id: Some(id),
-                    round_id,
+                    round_id: Some(round_id),
                     home_team_id,
                     away_team_id,
                     game_date,
@@ -183,7 +173,7 @@ pub(crate) async fn get_for_round(pool: &mut PgConnection, round_id: i32) -> Res
                     let away_team_score = row.get::<Option<i32>, _>(6);
                     Game {
                         game_id: Some(id),
-                        round_id,
+                        round_id: Some(round_id),
                         home_team_id,
                         away_team_id,
                         game_date,
@@ -223,7 +213,7 @@ pub(crate) async fn get_all(pool: &mut PgConnection) -> Result<Vec<Game>, sqlx::
                     let away_team_score = row.get::<Option<i32>, _>(6);
                     Game {
                         game_id: Some(id),
-                        round_id,
+                        round_id: Some(round_id),
                         home_team_id,
                         away_team_id,
                         game_date,

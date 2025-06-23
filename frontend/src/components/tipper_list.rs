@@ -24,8 +24,9 @@
 
 use crate::components::icon_button::IconButton;
 use crate::components::icons::{add_icon, cancel_icon, delete_icon, edit_icon, save_icon};
-use crate::models::tipper::Tipper;
 use gloo_net::http::Request;
+use kelpie_models::tipper::Tipper;
+use log::warn;
 use serde_json::json;
 // frontend/src/components/tipper_list.rs
 use yew::prelude::*;
@@ -62,7 +63,7 @@ pub fn tipper_list() -> Html {
         let email_input = email_input.clone();
         let tippers = tippers.clone();
 
-        Callback::from(move |e: MouseEvent| {
+        Callback::from(move |_e: MouseEvent| {
             let name = name_input.clone();
             let email = email_input.clone();
             let tippers = tippers.clone();
@@ -98,7 +99,7 @@ pub fn tipper_list() -> Html {
         let edit_name = edit_name.clone();
         let edit_email = edit_email.clone();
         Callback::from(move |tipper: Tipper| {
-            editing_id.set(Some(tipper.id));
+            editing_id.set(tipper.id);
             edit_name.set(tipper.name.clone());
             edit_email.set(tipper.email.clone());
         })
@@ -135,7 +136,7 @@ pub fn tipper_list() -> Html {
                             if let Ok(updated) = resp.json::<Tipper>().await {
                                 let new_list: Vec<Tipper> = (*tippers)
                                     .iter()
-                                    .map(|t| if t.id == id { updated.clone() } else { t.clone() })
+                                    .map(|t| if t.id.is_some_and(|x| x == id) { updated.clone() } else { t.clone() })
                                     .collect();
                                 tippers.set(new_list);
                                 editing_id.set(None);
@@ -160,7 +161,7 @@ pub fn tipper_list() -> Html {
                     let url = format!("/admin/api/tippers/{}", id);
                     let resp = Request::delete(&url).send().await;
                     if resp.is_ok() {
-                        let updated: Vec<Tipper> = (*tippers).clone().into_iter().filter(|t| t.id != id).collect();
+                        let updated: Vec<Tipper> = (*tippers).clone().into_iter().filter(|t| t.id.is_some_and(|x| x != id)).collect();
                         tippers.set(updated);
                     }
                 });
@@ -169,9 +170,10 @@ pub fn tipper_list() -> Html {
     };
 
     html! {
-        <div>
+        <div class="content">
             <h2>{ "Tippers" }</h2>
-            <table>
+            <div class="scrollable-table" style="border-right: 1px solid #ccc;">
+            <table class="scrollable-list">
                 <thead>
                     <tr>
                         <th>{ "Name" }</th>
@@ -211,10 +213,10 @@ pub fn tipper_list() -> Html {
                     // Existing tippers
 
                     { for (*tippers).iter().map(|tipper| {
-                        let is_editing = Some(tipper.id) == *editing_id;
+                        let is_editing = tipper.id == *editing_id;
                         if is_editing {
                             html! {
-                                <tr key={tipper.id}>
+                                <tr key={tipper.id.unwrap_or(-1)}>
                                     <td>
                                         <input
                                             value={(*edit_name).clone()}
@@ -252,8 +254,12 @@ pub fn tipper_list() -> Html {
                         } else {
                             let delete = {
                                 let delete_tipper = delete_tipper.clone();
-                                let id = tipper.id;
-                                Callback::from(move |_| delete_tipper.emit(id))
+                                if let Some(id) = tipper.id{
+                                    Callback::from(move |_| delete_tipper.emit(id))
+                                } else {
+                                    warn!("Tipper ID is None, cannot delete");
+                                    Callback::from(|_| ())
+                                }
                             };
                             let start_edit = {
                                 let start_edit = start_edit.clone();
@@ -261,7 +267,7 @@ pub fn tipper_list() -> Html {
                                 Callback::from(move |_| start_edit.emit(tipper.clone()))
                             };
                             html! {
-                                <tr key={tipper.id}>
+                                <tr key={tipper.id.unwrap_or(-1)}>
                                     <td>{ &tipper.name }</td>
                                     <td>{ &tipper.email }</td>
                                     <td class="actions">
@@ -280,6 +286,7 @@ pub fn tipper_list() -> Html {
                     })}
                 </tbody>
             </table>
+            </div>
         </div>
     }
 }

@@ -21,9 +21,9 @@
  *      Trevor Campbell
  *
  */
-use crate::models::round::Round;
-use crate::models::team::Team;
-use crate::models::{game, round, team, tip};
+use kelpie_models::round::Round;
+use kelpie_models::team::Team;
+use crate::db::{game, round, team, tip};
 use crate::util::{game_allocator, ApiError};
 use crate::DbTips;
 use chrono::NaiveDate;
@@ -33,25 +33,17 @@ use rocket::Route;
 use rocket_db_pools::Connection;
 use sqlx::{Acquire, PgConnection};
 use std::ops::Add;
+use tokio::task::id;
+use kelpie_models::game::Game;
 
 pub(crate) fn routes() -> Vec<Route> {
     routes![add_round, list, delete_round, get_round, update_round, template_round]
 }
 
-#[derive(Serialize, Deserialize)]
-pub(crate) struct NewGame {
-    pub(crate) home_team_id: i32,
-    pub(crate) away_team_id: i32,
-    pub(crate) game_date: NaiveDate,
-}
-
 #[derive(Serialize, Deserialize, Default)]
 pub(crate) struct NewRound {
-    pub(crate) round_id: Option<i32>,
-    pub(crate) round_number: i32,
-    pub(crate) start_date: NaiveDate,
-    pub(crate) end_date: NaiveDate,
-    pub(crate) games: Vec<NewGame>,
+    pub(crate) round: Round,
+    pub(crate) games: Vec<Game>,
 }
 
 #[get("/api/rounds")]
@@ -70,9 +62,9 @@ pub(crate) async fn add_round(mut pool: Connection<DbTips>, new_round: Json<NewR
     // Insert round
     let round = round::insert(
         &mut tx,
-        new_round.round_number,
-        new_round.start_date,
-        new_round.end_date,
+        new_round.round.round_number,
+        new_round.round.start_date,
+        new_round.round.end_date,
     ).await?;
 
     // Insert games
@@ -98,15 +90,17 @@ pub(crate) async fn update_round(mut pool: Connection<DbTips>, new_round: Json<N
     let mut tx = pool.begin().await?;
 
     validate_existing(&mut tx, &new_round).await?;
-    let id = new_round.round_id.unwrap_or(-1);
+
+    let round = &new_round.round;
+    let id = round.round_id.unwrap_or(-1);
 
     // Update round
     let _rows = round::update(
         &mut tx,
-        new_round.round_id.unwrap_or(-1),
-        new_round.round_number,
-        new_round.start_date,
-        new_round.end_date,
+        round.round_id.unwrap_or(-1),
+        round.round_number,
+        round.start_date,
+        round.end_date,
     ).await?;
 
     // Replace all games
@@ -149,18 +143,19 @@ pub(crate) async fn get_round(id: i32, mut pool: Connection<DbTips>) -> Result<J
     if let Some(round) = round {
 
         let games = game::get_for_round(&mut **pool, id).await?
-            .into_iter().map(|g| NewGame {
+            .into_iter().map(|g| Game {
+            game_id: g.game_id,
+            round_id: Some(id),
             home_team_id: g.home_team_id,
             away_team_id: g.away_team_id,
             game_date: g.game_date,
+            home_team_score: None,
+            away_team_score: None,
         }).collect();
 
         let round = NewRound{
-            round_id: round.round_id,
-            round_number: round.round_number,
-            start_date: round.start_date,
-            end_date: round.end_date,
-            games: games, // No games defined yet
+            round: round,
+            games: games,
         };
         Ok(Json(round))
     } else {
@@ -189,18 +184,25 @@ pub(crate) async fn template_round(mut pool: Connection<DbTips>) -> Result<Json<
                 &teams,
                 start,
                 end,
-            ).into_iter().map(|g| NewGame {
+            ).into_iter().map(|g| Game {
+                game_id: None, // No ID yet
+                round_id: None,
                 home_team_id: g.home_team_id,
                 away_team_id: g.away_team_id,
                 game_date: g.game_date,
+                home_team_score: None,
+                away_team_score: None,
             }).collect();
 
-            NewRound{
+            let round = Round {
                 round_id: None, // No ID yet
                 round_number,
                 start_date: start,
                 end_date: end,
-                games: game_list, // No games defined yet
+            };
+            NewRound {
+                round,
+                games: game_list,
             }
         } else {
             // No rounds defined, set default values
@@ -211,13 +213,14 @@ pub(crate) async fn template_round(mut pool: Connection<DbTips>) -> Result<Json<
 }
 
 async fn validate_existing(pool: &mut PgConnection, round: &Json<NewRound>) -> Result<(), ApiError> {
-    if let Some(round_id) = round.round_id {
+    let r = &round.round;
+    if let Some(round_id) = r.round_id {
         // Round number must be > 0 and be unique, i.e. not in database
-        if round.round_number <= 0 {
+        if r.round_number <= 0 {
             return Err(ApiError::Invalid("Round number must be greater than 0".to_string()));
         }
 
-        if round::round_with_number_used(&mut *pool, round_id, round.round_number).await? {
+        if round::round_with_number_used(&mut *pool, round_id, r.round_number).await? {
             return Err(ApiError::Invalid("Round number already exists".to_string()));
         }
 
@@ -230,12 +233,13 @@ async fn validate_existing(pool: &mut PgConnection, round: &Json<NewRound>) -> R
 }
 
 async fn validate_new(pool: &mut PgConnection, round: &Json<NewRound>) -> Result<(), ApiError> {
+    let r = &round.round;
     // Round number must be > 0 and be unique, i.e. not in database
-    if round.round_number <= 0{
+    if r.round_number <= 0{
         return Err(ApiError::Invalid("Round number must be greater than 0".to_string()));
     }
 
-    if round::round_with_number_exists(&mut *pool, round.round_number).await? {
+    if round::round_with_number_exists(&mut *pool, r.round_number).await? {
         return Err(ApiError::Invalid("Round number already exists".to_string()));
     }
 
@@ -244,7 +248,9 @@ async fn validate_new(pool: &mut PgConnection, round: &Json<NewRound>) -> Result
 }
 
 async fn validate_common(pool: &mut PgConnection, round: &Json<NewRound>)  -> Result<(), ApiError>{
-    if round.start_date > round.end_date {
+    let r = &round.round;
+
+    if r.start_date > r.end_date {
         return Err(ApiError::Invalid("Round date must not be greater than end date".to_string()));
     }
 
@@ -264,10 +270,10 @@ async fn validate_common(pool: &mut PgConnection, round: &Json<NewRound>)  -> Re
             }
         }
         // also check the game date is between the round start and end dates
-        if game.game_date < round.start_date || game.game_date > round.end_date {
+        if game.game_date < r.start_date || game.game_date > r.end_date {
             let date = game.game_date.format("%Y-%m-%d").to_string();
-            let start_date = round.start_date.format("%Y-%m-%d").to_string();
-            let end_date = round.end_date.format("%Y-%m-%d").to_string();
+            let start_date = r.start_date.format("%Y-%m-%d").to_string();
+            let end_date = r.end_date.format("%Y-%m-%d").to_string();
             return Err(ApiError::Invalid(
                 format!("Game date {} is not between the round start date {} and end date {}",
                         date, start_date, end_date)));

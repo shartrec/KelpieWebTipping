@@ -2,3 +2,4 @@
 /frontend/dist/
 /backend/static/*
 /backend/static/
+/backend/logs/

@@ -22,8 +22,8 @@
  *
  */
 
-use crate::models::game::Game;
-use crate::models::team::Team;
+use kelpie_models::game::Game;
+use kelpie_models::team::Team;
 use chrono::NaiveDate;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -80,7 +80,7 @@ pub(crate) fn allocate_games(round_id: i32, teams: &Vec<Team>, start: NaiveDate,
         for (team1, team2) in day_games {
             game_objects.push(Game {
                 game_id: None,
-                round_id,
+                round_id: Some(round_id),
                 home_team_id: team1.id.unwrap(),
                 away_team_id: team2.id.unwrap(),
                 game_date: day.clone(),

@@ -4,6 +4,7 @@ edition = "2021"
 resolver = "2"
 
 [dependencies]
+kelpie_models = { path = "../kelpie_models" }
 chrono = { version = "0.4", features = ["serde"] }
 dirs-next = "2.0.0"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }

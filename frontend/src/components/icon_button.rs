@@ -42,7 +42,7 @@ pub fn icon_button(props: &IconButtonProps) -> Html {
         <button disabled={*disabled} class="icon-button" {onclick}>
             <div class="icon">{ for children.iter() }</div>
         if let Some(lbl) = label {
-            <div class="label">{ label }</div>
+            <div class="label">{ lbl }</div>
         }
         </button>
     }

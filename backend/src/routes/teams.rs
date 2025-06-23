@@ -21,8 +21,8 @@
  *      Trevor Campbell
  *
  */
-use crate::models::team;
-use crate::models::team::Team;
+use crate::db::team;
+use kelpie_models::team::Team;
 use crate::util::ApiError;
 use crate::DbTips;
 use rocket::serde::json::Json;

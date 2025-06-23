@@ -22,31 +22,21 @@
  *
  */
 use crate::components::icon_button::IconButton;
-use crate::components::icons::{cancel_icon, delete_icon, games_icon, save_icon, submit_icon};
-use crate::models::team::Team;
+use crate::components::icons::{cancel_icon, delete_icon, games_icon, save_icon};
 use crate::{View, ViewContext};
 use chrono::NaiveDate;
 use gloo_net::http::Request;
+use kelpie_models::game::Game;
+use kelpie_models::round::Round;
+use kelpie_models::team::Team;
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
-struct NewGame {
-    home_team_id: i32,
-    away_team_id: i32,
-    game_date: NaiveDate,
-    home_score: Option<i32>,
-    away_score: Option<i32>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Default)]
 struct NewRound {
-    round_id: Option<i32>,
-    round_number: i32,
-    start_date: NaiveDate,
-    end_date: NaiveDate,
-    games: Vec<NewGame>,
+    round: Round,
+    games: Vec<Game>,
 }
 
 #[derive(Properties, PartialEq)]
@@ -143,8 +133,8 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
         let round = round.clone();
         Callback::from(move |_| {
             let mut g = (*games).clone();
-            let game = NewGame {
-                game_date: round.start_date, // Default to start date
+            let game = Game {
+                game_date: round.round.start_date, // Default to start date
                 ..Default::default()
             };
             g.push(game);
@@ -225,42 +215,43 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
         "Add Round"
     };
 
+    let current_round = round.round.clone();
     html! {
         <div>
             <h2>{ h1 }</h2>
             <div style="display: flex; gap: 1rem;">
                 <input type="number" placeholder="Round Number"
-                    value={round.round_number.to_string()}
+                    value={current_round.round_number.to_string()}
                     oninput={Callback::from({
                         let round = round.clone();
                         move |e: InputEvent| {
                             let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
                             let mut r = (*round).clone();
-                            r.round_number = value.parse().unwrap_or(0);
+                            r.round.round_number = value.parse().unwrap_or(0);
                             round.set(r);
                         }
                     })}
                 />
                 <input type="date" placeholder="Start Date"
-                    value={round.start_date.format("%Y-%m-%d").to_string()}
+                    value={current_round.start_date.format("%Y-%m-%d").to_string()}
                     oninput={Callback::from({
                         let round = round.clone();
                         move |e: InputEvent| {
                             let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
                             let mut r = (*round).clone();
-                            r.start_date = NaiveDate::parse_from_str(value.as_str(), "%Y-%m-%d").expect("Invalid date format");
+                            r.round.start_date = NaiveDate::parse_from_str(value.as_str(), "%Y-%m-%d").expect("Invalid date format");
                             round.set(r);
                         }
                     })}
                 />
                 <input type="date" placeholder="End Date"
-                    value={round.end_date.format("%Y-%m-%d").to_string()}
+                    value={current_round.end_date.format("%Y-%m-%d").to_string()}
                     oninput={Callback::from({
                         let round = round.clone();
                         move |e: InputEvent| {
                             let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
                             let mut r = (*round).clone();
-                            r.end_date = NaiveDate::parse_from_str(value.as_str(), "%Y-%m-%d").expect("Invalid date format");
+                            r.round.end_date = NaiveDate::parse_from_str(value.as_str(), "%Y-%m-%d").expect("Invalid date format");
                             round.set(r);
                         }
                     })}
@@ -293,22 +284,23 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                                 })}>
                                     <option value="" selected={game.home_team_id < 1} disabled=true>{ "Select Home Team" }</option>
                                     { for teams.iter().map(|team| {
-                                        let selected = team.id == game.home_team_id;
+                                         let id = team.id.unwrap_or(-1);
+                                        let selected = id == game.home_team_id;
                                         html! {
-                                           <option value={team.id.to_string()} selected={selected}>{ &team.nickname.clone() }</option>
+                                           <option value={id.to_string()} selected={selected}>{ &team.nickname.clone() }</option>
                                         }
                                     })}
                                 </select>
                             </td>
                             <td>
                                 <input type="number" size="3"
-                                    value={game.home_score.map_or("".to_string(), |s| s.to_string())}
+                                    value={game.home_team_score.map_or("".to_string(), |s| s.to_string())}
                                     oninput={Callback::from({
                                     let games = games.clone();
                                         move |e: InputEvent| {
                                             let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
                                             let mut g = (*games).clone();
-                                            g[i].home_score = if value.is_empty() {
+                                            g[i].home_team_score = if value.is_empty() {
                                                 None // Allow clearing the value
                                             } else {
                                                 Some(value.parse().unwrap_or(0))
@@ -330,22 +322,23 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                                 })}>
                                     <option value="" selected={game.away_team_id < 1} disabled=true>{ "Select Away Team" }</option>
                                     { for teams.iter().map(|team| {
-                                        let selected = team.id == game.away_team_id;
+                                        let id = team.id.unwrap_or(-1);
+                                        let selected = id == game.away_team_id;
                                         html! {
-                                            <option value={team.id.to_string()} selected={selected}>{ &team.nickname.clone() }</option>
+                                            <option value={id.to_string()} selected={selected}>{ &team.nickname.clone() }</option>
                                         }
                                     })}
                                 </select>
                             </td>
                             <td>
                                 <input type="number" size="3"
-                                    value={game.away_score.map_or("".to_string(), |s| s.to_string())}
+                                    value={game.away_team_score.map_or("".to_string(), |s| s.to_string())}
                                     oninput={Callback::from({
                                     let games = games.clone();
                                         move |e: InputEvent| {
                                             let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
                                             let mut g = (*games).clone();
-                                            g[i].home_score = if value.is_empty() {
+                                            g[i].away_team_score = if value.is_empty() {
                                                 None // Allow clearing the value
                                             } else {
                                                 Some(value.parse().unwrap_or(0))
@@ -358,8 +351,8 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                             <td>
                                 <input type="date" placeholder="Game Date"
                                     value={game.game_date.format("%Y-%m-%d").to_string()}
-                                    min={round.start_date.format("%Y-%m-%d").to_string()}
-                                    max={round.end_date.format("%Y-%m-%d").to_string()}
+                                    min={current_round.start_date.format("%Y-%m-%d").to_string()}
+                                    max={current_round.end_date.format("%Y-%m-%d").to_string()}
                                     oninput={Callback::from({
                                         let games = games.clone();
                                         move |e: InputEvent| {

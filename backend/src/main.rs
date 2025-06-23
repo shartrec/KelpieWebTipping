@@ -24,7 +24,7 @@
 
 #[macro_use] extern crate rocket;
 mod routes;
-mod models;
+mod db;
 mod util;
 
 use crate::routes::{rounds, teams};

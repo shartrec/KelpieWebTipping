@@ -28,7 +28,7 @@ use serde::Deserialize;
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq, Clone)]
-pub struct RecordTipsProps {
+pub struct TipsProps {
     pub tipper_id: i32,
     pub round: i32, // This is now round_id
 }
@@ -53,8 +53,8 @@ pub struct RoundWithGames {
     // ...other fields if needed...
 }
 
-#[function_component(RecordTips)]
-pub fn record_tips(props: &RecordTipsProps) -> Html {
+#[function_component(Tips)]
+pub fn record_tips(props: &TipsProps) -> Html {
     let round = use_state(|| Option::<RoundWithGames>::None);
     let tips = use_state(|| std::collections::HashMap::<i32, String>::new());
 

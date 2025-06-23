@@ -28,3 +28,5 @@ pub(crate) mod tipper_list;
 pub(crate) mod team_list;
 pub(crate) mod edit_round;
 pub(crate) mod round_list;
+pub(crate) mod tip_view;
+pub(crate) mod tips;

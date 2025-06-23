@@ -24,8 +24,9 @@
 
 use crate::components::icon_button::IconButton;
 use crate::components::icons::{add_icon, cancel_icon, delete_icon, edit_icon, save_icon};
-use crate::models::team::Team;
 use gloo_net::http::Request;
+use kelpie_models::team::Team;
+use log::warn;
 use serde_json::json;
 use yew::prelude::*;
 
@@ -36,7 +37,6 @@ pub struct TeamListProps {
 
 #[function_component(TeamList)]
 pub fn team_list(props: &TeamListProps) -> Html {
-
     let teams = use_state(|| vec![]);
     let name_input = use_state(|| String::new());
     let nickname_input = use_state(|| String::new());
@@ -67,7 +67,7 @@ pub fn team_list(props: &TeamListProps) -> Html {
         let nickname_input = nickname_input.clone();
         let teams = teams.clone();
 
-        Callback::from(move |e: MouseEvent| {
+        Callback::from(move |_e: MouseEvent| {
             let name = name_input.clone();
             let nickname = nickname_input.clone();
             let teams = teams.clone();
@@ -103,7 +103,7 @@ pub fn team_list(props: &TeamListProps) -> Html {
         let edit_name = edit_name.clone();
         let edit_nickname = edit_nickname.clone();
         Callback::from(move |team: Team| {
-            editing_id.set(Some(team.id));
+            editing_id.set(team.id);
             edit_name.set(team.name.clone());
             edit_nickname.set(team.nickname.clone());
         })
@@ -138,7 +138,7 @@ pub fn team_list(props: &TeamListProps) -> Html {
                             if let Ok(updated) = resp.json::<Team>().await {
                                 let new_list: Vec<Team> = (*teams)
                                     .iter()
-                                    .map(|t| if t.id == id { updated.clone() } else { t.clone() })
+                                    .map(|t| if t.id.is_some_and(|x| x == id) { updated.clone() } else { t.clone() })
                                     .collect();
                                 teams.set(new_list);
                                 editing_id.set(None);
@@ -150,7 +150,6 @@ pub fn team_list(props: &TeamListProps) -> Html {
         })
     };
 
-    // Delete team
     let delete_team = {
         let teams = teams.clone();
         let set_error_msg = props.set_error_msg.clone();
@@ -163,7 +162,7 @@ pub fn team_list(props: &TeamListProps) -> Html {
                     Ok(resp) => {
                         if resp.ok() {
                             set_error_msg.emit(None);
-                            let new_list: Vec<Team> = (*teams).iter().filter(|t| t.id != id).cloned().collect();
+                            let new_list: Vec<Team> = (*teams).clone().into_iter().filter(|t| t.id.is_some_and(|x| x != id)).collect();
                             teams.set(new_list);
                         } else {
                             let status = resp.status();
@@ -186,9 +185,12 @@ pub fn team_list(props: &TeamListProps) -> Html {
         })
     };
 
-    html! {
-        <div>
+
+    // Delete team
+html! {
+        <div class="content">
             <h2>{ "Teams" }</h2>
+            <div class="scrollable-table" style="border-right: 1px solid #ccc;">
             <table>
                 <thead>
                     <tr>
@@ -228,10 +230,10 @@ pub fn team_list(props: &TeamListProps) -> Html {
                         </td>
                     </tr>
                     { for (*teams).iter().map(|team| {
-                        let is_editing = Some(team.id) == *editing_id;
+                        let is_editing = team.id == *editing_id;
                         if is_editing {
                             html! {
-                                <tr key={team.id}>
+                                <tr key={team.id.unwrap_or(-1)}>
                                     <td>
                                         <input
                                             value={(*edit_name).clone()}
@@ -269,8 +271,12 @@ pub fn team_list(props: &TeamListProps) -> Html {
                         } else {
                             let delete = {
                                 let delete_team = delete_team.clone();
-                                let id = team.id;
-                                Callback::from(move |_| delete_team.emit(id))
+                                if let Some(id) = team.id{
+                                    Callback::from(move |_| delete_team.emit(id))
+                                } else {
+                                    warn!("Tipper ID is None, cannot delete");
+                                    Callback::from(|_| ())
+                                }
                             };
                             let start_edit = {
                                 let start_edit = start_edit.clone();
@@ -279,7 +285,7 @@ pub fn team_list(props: &TeamListProps) -> Html {
                             };
                             let disabled = !(team.can_delete.unwrap_or(false));
                             html! {
-                                <tr key={team.id}>
+                                <tr key={team.id.unwrap_or(-1)}>
                                     <td>{ &team.name }</td>
                                     <td>{ &team.nickname }</td>
                                     <td class="actions">
@@ -298,6 +304,7 @@ pub fn team_list(props: &TeamListProps) -> Html {
                     })}
                 </tbody>
             </table>
+            </div>
         </div>
     }
 }

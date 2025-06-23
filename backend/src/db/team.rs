@@ -21,22 +21,13 @@
  *      Trevor Campbell
  *
  */
+use kelpie_models::team::Team;
 use log::error;
 use rocket_db_pools::sqlx;
 use rocket_db_pools::sqlx::PgConnection;
 use rocket_db_pools::sqlx::Row;
 
 use rocket::serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct Team {
-    pub(crate) id: Option<i32>,
-    pub(crate) name: String,
-    pub(crate) nickname: String,
-    pub(crate) can_delete: Option<bool>,
-}
-
-impl Team {}
 
 pub(crate) async fn insert(pool: &mut PgConnection, name: String, nickname: String) -> Result<Team, sqlx::Error> {
     let result =

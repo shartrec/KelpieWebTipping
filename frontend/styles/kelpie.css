@@ -12,22 +12,46 @@
     padding: 0;
 }
 
-body {
+html, body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f9fafb;
     color: var(--primary-color);
-    line-height: 1.6;
-    padding: 20px;
+    height: 100%;
+    margin: 0;
+    padding: 0px;
 }
 
+nav {
+    background-color: var(--background-color);
+    flex-direction: column;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: start;
+    align-items: center;
+}
 /* Container */
-.container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 20px;
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+.page-container {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    height: 100vh; /* full browser height */
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Enables vertical scrolling */
+    min-height: 0; /* Prevents content from stretching */
+}
+
+.scrollable-table {
+    flex: 1;
+    overflow-y: auto; /* Enables vertical scrolling */
+    padding: 1rem;
+    background-color: #fafafa;
+    min-height: 0; /* Prevents overflow issues */
 }
 
 /* Headings */
@@ -78,7 +102,6 @@ button:disabled {
     color: var(--custom-color);
     background-color: #f0f0f0;
     border: none;
-    border-radius: 8px;
     padding: 8px;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -87,6 +110,16 @@ button:disabled {
     align-items: center;
 }
 .icon-button:hover {
+    background-color: #e0e0e0;
+}
+
+.key-button {
+    color: var(--custom-color);
+    background-color: #f0f0f0;
+    border: none;
+    padding: 0;
+}
+.key-button:hover {
     background-color: #e0e0e0;
 }
 
@@ -121,7 +154,7 @@ table {
 
 th, td {
     /*width: 40%;*/
-    padding: 4px 5px;
+    padding: 1px 3px;
     border: 1px solid #e5e7eb;
     text-align: left;
 }
@@ -141,7 +174,7 @@ td input, td select, td textarea {
     width: 100%;
     height: 100%;
     box-sizing: border-box;
-    padding: 4px 5px; /* Match table cell padding */
+    padding: 1px 3px; /* Match table cell padding */
     font-size: 1rem;
     border-radius: 6px;
     border: 1px solid #d1d5db;
@@ -172,6 +205,18 @@ td input, td select, td textarea {
     animation: fadeIn 0.5s forwards;
 }
 
+.scrollable-list {
+    flex: 0 0 10rem;
+    overflow-y: auto;
+    padding: 1rem;
+    background-color: #fafafa;
+    min-height: 0; /* Prevents overflow issues */
+}
+.scrollable-list ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
 @keyframes fadeIn {
     to {
         opacity: 1;

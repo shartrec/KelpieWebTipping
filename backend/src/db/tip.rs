@@ -22,17 +22,9 @@
  *
  */
 use chrono::NaiveDateTime;
+use kelpie_models::tip::Tip;
 use sqlx::PgConnection;
 
-#[derive(Debug)]
-pub struct Tip {
-    pub tip_id: Option<i32>,
-    pub user_id: Option<i32>,
-    pub match_id: Option<i32>,
-    pub predicted_home_score: Option<i32>,
-    pub predicted_away_score: Option<i32>,
-    pub tip_date: Option<NaiveDateTime>,
-}
 
 pub(crate) async fn delete_by_round(pool: &mut PgConnection, round_id: i32) -> Result<u64, sqlx::Error> {
     let result = sqlx::query("DELETE FROM tips WHERE game_id in (select game_id from games where round_id=$1)")

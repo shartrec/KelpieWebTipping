@@ -22,18 +22,16 @@
  *
  */
 
-use yew::prelude::*;
-
-// frontend/src/main.rs
-mod models;
 mod components;
 
 use crate::components::edit_round::EditRound;
 use crate::components::icon_button::IconButton;
-use crate::components::icons::{rounds_icon, teams_icon, tippers_icon};
+use crate::components::icons::{rounds_icon, teams_icon, tippers_icon, tips_icon};
 use crate::components::round_list::RoundList;
 use crate::components::team_list::TeamList;
+use crate::components::tip_view::TipView;
 use components::tipper_list::TipperList;
+use yew::prelude::*;
 
 #[derive(PartialEq, Clone)]
 enum View {
@@ -41,6 +39,7 @@ enum View {
     Tippers,
     Rounds,
     RoundEdit{round_id: Option<i32>},
+    Tips,
 }
 
 #[derive(PartialEq, Clone)]
@@ -77,6 +76,10 @@ fn app() -> Html {
         let view_context = view_context.clone();
         Callback::from(move |_| view_context.set_view(View::Rounds))
     };
+    let set_tips = {
+        let view_context = view_context.clone();
+        Callback::from(move |_| view_context.set_view(View::Tips))
+    };
 
     let set_error_msg = {
         let error_msg = error_msg.clone();
@@ -86,7 +89,7 @@ fn app() -> Html {
     html! {
         <ContextProvider<ViewContext> context={view_context}>
 
-            <div style="display: flex;">
+            <div class="page-container" style="display: flex;">
                 <nav style="width: 80px; background: #f0f0f0; padding: 16px 0;">
                     <IconButton label="Teams" onclick={set_teams}>
                         { teams_icon() }
@@ -94,11 +97,14 @@ fn app() -> Html {
                     <IconButton label="Tippers" onclick={set_tippers}>
                         { tippers_icon() }
                     </IconButton>
-                    <IconButton label="Rounds" onclick={set_rounds}>
+                    <IconButton label="Rounds" onclick={set_rounds.clone()}>
                         { rounds_icon() }
                     </IconButton>
+                    <IconButton label="Tips" onclick={set_tips}>
+                        { tips_icon() }
+                    </IconButton>
                 </nav>
-                <main style="flex: 1; padding: 24px;">
+                <main class="content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
                     <h1 style="display: flex; align-items: center;">
                         <img src="images/kelpiedog_120x120_transparent.png" alt="Kelpie Logo" style="margin-right: 12px;"/>
                         <span>{ "Kelpie Footy Tipping" }<span style="font-size:1rem;"><br/>{"by Shartrec"}</span></span>
@@ -118,6 +124,7 @@ fn app() -> Html {
                             View::Tippers => html! { <TipperList /> },
                             View::Rounds => html! { <RoundList /> },
                             View::RoundEdit{round_id} => html! { <EditRound set_error_msg={set_error_msg.clone()} round_id={round_id}/> },
+                            View::Tips => html! { <TipView /> },
                         }
                     }
                 </main>
