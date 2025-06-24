@@ -27,7 +27,7 @@ mod routes;
 mod db;
 mod util;
 
-use crate::routes::{rounds, teams};
+use crate::routes::{rounds, teams, tips};
 use crate::routes::tippers;
 use rocket::fs::{relative, FileServer};
 
@@ -48,7 +48,8 @@ fn rocket() -> _ {
         .mount("/", FileServer::from(relative!("./static")))
         .mount("/admin", tippers::routes())
         .mount("/admin", teams::routes())
-        .mount("/admin", rounds::routes());
+        .mount("/admin", rounds::routes())
+        .mount("/", tips::routes());
     rocket
 }
 

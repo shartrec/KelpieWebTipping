@@ -22,7 +22,7 @@
  *
  */
 
-use crate::components::icon_button::IconButton;
+use crate::components::buttons::IconButton;
 use crate::components::icons::{add_icon, cancel_icon, delete_icon, edit_icon, save_icon};
 use gloo_net::http::Request;
 use kelpie_models::team::Team;

@@ -25,3 +25,4 @@
 pub(crate) mod tippers;
 pub(crate) mod teams;
 pub(crate) mod rounds;
+pub(crate) mod tips;

@@ -34,3 +34,9 @@ pub struct Game {
     pub home_team_score: Option<i32>,
     pub away_team_score: Option<i32>,
 }
+
+impl PartialEq for Game {
+    fn eq(&self, other: &Self) -> bool {
+        self.game_id == other.game_id
+    }
+}

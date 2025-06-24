@@ -31,3 +31,9 @@ pub struct Round {
     pub start_date: NaiveDate,
     pub end_date: NaiveDate,
 }
+
+impl PartialEq for Round {
+    fn eq(&self, other: &Self) -> bool {
+        self.round_id == other.round_id
+    }
+}

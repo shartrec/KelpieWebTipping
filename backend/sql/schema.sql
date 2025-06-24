@@ -57,10 +57,8 @@ CREATE TABLE IF NOT EXISTS tippers (
 
 -- Table to store tips
 CREATE TABLE IF NOT EXISTS tips (
-    tip_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES tippers(tipper_id),
-    game_id INT NOT NULL REFERENCES games(game_id),
-    predicted_home_score INT NOT NULL,
-    predicted_away_score INT NOT NULL,
-    tip_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    tipper_id INT NOT NULL REFERENCES tippers(tipper_id),
+    game_id   INT NOT NULL REFERENCES games(game_id),
+    team_id   INT NOT NULL REFERENCES teams(team_id),
+    PRIMARY KEY (tipper_id, game_id)
 );

@@ -21,95 +21,231 @@
  *      Trevor Campbell
  *
  */
-use chrono::NaiveDate;
 use gloo_net::http::Request;
-use log::debug;
+use log::{debug, warn};
 use serde::Deserialize;
 use yew::prelude::*;
+use yew::html::Scope;
+use yew::virtual_dom::AttrValue;
+use kelpie_models::game::Game;
+use kelpie_models::round::Round;
+use kelpie_models::team::Team;
+use kelpie_models::tip::Tip;
+use kelpie_models::tipper::Tipper;
+use crate::components::buttons::{IconButton, TipSelector};
+use crate::components::icons::{cancel_icon, reset_icon, save_icon};
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct TipsProps {
     pub tipper_id: i32,
-    pub round: i32, // This is now round_id
+    pub round_id: i32, // This is now round_id
 }
 
-#[derive(Deserialize, Clone, PartialEq, Debug)]
-pub struct Game {
-    game_id: i32,
-    home_team_id: i32,
-    away_team_id: i32,
-    game_date: Option<NaiveDate>,
-    home_score: Option<i32>,
-    away_score: Option<i32>,
-}
-
-#[derive(Deserialize, Clone, PartialEq, Debug)]
+#[derive(Deserialize, PartialEq, Clone, Debug)]
 pub struct RoundWithGames {
-    pub round_id: Option<i32>,
-    pub round_number: i32,
-    pub start_date: Option<NaiveDate>,
-    pub end_date: Option<NaiveDate>,
+    pub round: Round,
     pub games: Vec<Game>,
-    // ...other fields if needed...
+}
+
+// Helper function to load tips for a tipper and round
+fn load_tips(
+    tipper_id: i32,
+    round_id: i32,
+    round: Option<RoundWithGames>,
+    game_tips: UseStateHandle<Vec<Tip>>,
+) {
+    wasm_bindgen_futures::spawn_local(async move {
+        let url = format!("/api/tips/{}/{}", tipper_id, round_id);
+        let tips = Request::get(&url).send().await
+            .ok()
+            .and_then(|resp| resp.json::<Vec<Tip>>().await.ok())
+            .unwrap_or_default();
+
+        if tips.is_empty() {
+            if let Some(r) = round {
+                let initial_tips = r.games.iter().map(|g| Tip {
+                    tipper_id,
+                    game_id: g.game_id.unwrap_or(-1),
+                    team_id: None,
+                }).collect();
+                game_tips.set(initial_tips);
+            } else {
+                game_tips.set(vec![]);
+            }
+        } else {
+            game_tips.set(tips);
+        }
+    });
 }
 
 #[function_component(Tips)]
 pub fn record_tips(props: &TipsProps) -> Html {
-    let round = use_state(|| Option::<RoundWithGames>::None);
-    let tips = use_state(|| std::collections::HashMap::<i32, String>::new());
+    let round = use_state(|| None::<RoundWithGames>);
+    let teams = use_state(|| Vec::<Team>::new());
+    let game_tips = use_state(|| Vec::<Tip>::new());
+    let tipper = use_state(|| None::<Tipper>);
+    let save_status = use_state(|| None::<String>);
 
-    // Fetch round with games for the round_id
+    // Fetch teams once
     {
-        let round = round.clone();
-        let round_id = props.round;
-        use_effect_with(round_id, move |_| {
-            let round = round.clone();
+        let teams = teams.clone();
+        use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                let url = format!("admin/api/rounds/{}", round_id);
-                let resp = Request::get(&url).send().await;
-                match resp {
-                    Ok(response) => {
-                        if let Ok(json) = response.json::<RoundWithGames>().await {
-                            round.set(Some(json));
-                        } else {
-                            debug!("Failed to parse round data");
-                            round.set(Some(RoundWithGames {
-                                round_id: Some(round_id),
-                                round_number: 0,
-                                start_date: None,
-                                end_date: None,
-                                games: vec![],
-                            }));
-                        }
-                    }
-                    Err(_) => {
-                        round.set(Some(RoundWithGames {
-                            round_id: Some(round_id),
-                            round_number: 0,
-                            start_date: None,
-                            end_date: None,
-                            games: vec![],
-                        }));
-                    }
-                }
+                let data = Request::get("/admin/api/teams")
+                    .send().await
+                    .ok()
+                    .and_then(|resp| resp.json::<Vec<Team>>().await.ok())
+                    .unwrap_or_default();
+                teams.set(data);
             });
             || ()
         });
     }
 
-    // Handler for selecting a tip
-    let on_tip_select = {
-        let tips = tips.clone();
-        Callback::from(move |(game_id, team): (i32, String)| {
-            let mut new_tips = (*tips).clone();
-            new_tips.insert(game_id, team);
-            tips.set(new_tips);
+    // Fetch tipper details and tips when tipper_id changes
+    {
+        let tipper = tipper.clone();
+        let tipper_id = props.tipper_id;
+        let round_id = props.round_id;
+        let round = round.clone();
+        let game_tips = game_tips.clone();
+        use_effect_with(tipper_id, move |&tipper_id| {
+            let tipper = tipper.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                let data = Request::get(&format!("/admin/api/tippers/{}", tipper_id))
+                    .send().await
+                    .ok()
+                    .and_then(|resp| resp.json::<Tipper>().await.ok());
+                tipper.set(data);
+                load_tips(tipper_id, round_id, (*round).clone(), game_tips.clone());
+            });
+            || ()
+        });
+    }
+
+    // Fetch round with games and tips when round_id changes
+    {
+        let round = round.clone();
+        let round_id = props.round_id;
+        let tipper_id = props.tipper_id;
+        let game_tips = game_tips.clone();
+        use_effect_with(round_id, move |&round_id| {
+            let round = round.clone();
+            let game_tips = game_tips.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                let new_round = Request::get(&format!("admin/api/rounds/{}", round_id))
+                    .send().await
+                    .ok()
+                    .and_then(|resp| resp.json::<RoundWithGames>().await.ok())
+                    .unwrap_or(RoundWithGames { round: Round::default(), games: vec![] });
+                round.set(Some(new_round.clone()));
+                load_tips(tipper_id, round_id, Some(new_round), game_tips.clone());
+            });
+            || ()
+        });
+    }
+
+    let update_tip = {
+        let game_tips = game_tips.clone();
+        Callback::from(move |(game_id, team_id)| {
+            let mut updated = (*game_tips).clone();
+            if let Some(tip) = updated.iter_mut().find(|t| t.game_id == game_id) {
+                tip.team_id = Some(team_id);
+            }
+            game_tips.set(updated);
+        })
+    };
+
+    let reset_tips = {
+        let round = round.clone();
+        let game_tips = game_tips.clone();
+        let tipper_id = props.tipper_id;
+        Callback::from(move |_| {
+            if let Some(r) = &*round {
+                let tips = r.games.iter().map(|g| Tip {
+                    tipper_id,
+                    game_id: g.game_id.unwrap_or(-1),
+                    team_id: None,
+                }).collect();
+                game_tips.set(tips);
+            }
+        })
+    };
+
+    let save_tips = {
+        let game_tips = game_tips.clone();
+        let round = round.clone();
+        let tipper_id = props.tipper_id;
+        let round_id = props.round_id;
+        let save_status = save_status.clone();
+        Callback::from(move |_| {
+            let all_tipped = if let Some(r) = &*round {
+                r.games.iter().all(|g| {
+                    let game_id = g.game_id.unwrap_or(-1);
+                    game_tips.iter().any(|t| t.game_id == game_id && t.team_id.is_some())
+                })
+            } else {
+                false
+            };
+            if !all_tipped {
+                web_sys::window()
+                    .and_then(|w| w.alert_with_message("Please enter a tip for every game.").ok());
+                return;
+            }
+            let tips = (*game_tips).clone();
+            let save_status = save_status.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                let url = format!("/api/tips/{}/{}", tipper_id, round_id);
+                let resp = Request::post(&url)
+                    .json(&tips)
+                    .unwrap()
+                    .send()
+                    .await;
+                match resp {
+                    Ok(r) if r.ok() => {
+                        save_status.set(Some("Tips saved!".to_string()));
+                        let save_status = save_status.clone();
+                        gloo_timers::callback::Timeout::new(2000, move || {
+                            save_status.set(None);
+                        }).forget();
+                    }
+                    _ => {
+                        save_status.set(Some("Failed to save tips.".to_string()));
+                        let save_status = save_status.clone();
+                        gloo_timers::callback::Timeout::new(2000, move || {
+                            save_status.set(None);
+                        }).forget();
+                    }
+                }
+            });
         })
     };
 
     html! {
         <div>
-            <h4>{ format!("Record tips for Tipper ID {} in Round {}", props.tipper_id, props.round) }</h4>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <h4 style="flex: 1;">
+                    {
+                        match &*tipper {
+                            Some(t) => {
+                                let r_name = match &*round {
+                                    Some(r) => r.round.round_number.to_string(),
+                                    _ => "??".to_string(),
+                                };
+                                format!("Record tips for {} in Round {}", t.name, r_name)
+                            }
+                            None => format!("Record tips for Tipper ID {} in Round {}", props.tipper_id, props.round_id)
+                        }
+                    }
+                </h4>
+                if let Some(msg) = &*save_status {
+                    <div style="margin: 0.5rem 0; color: #388e3c; font-weight: bold;">
+                        { msg }
+                    </div>
+                }
+                <IconButton label="Save" onclick={save_tips.clone()}>{ save_icon() }</IconButton>
+                <IconButton label="Reset" onclick={reset_tips.clone()}>{ reset_icon() }</IconButton>
+            </div>
             {
                 match &*round {
                     None => html! { <p>{ "Loading games..." }</p> },
@@ -117,38 +253,23 @@ pub fn record_tips(props: &TipsProps) -> Html {
                     Some(r) => html! {
                         <ul style="list-style: none; padding: 0;">
                             { for r.games.iter().map(|game| {
-                                let selected = tips.get(&game.game_id).cloned();
+                                let home = teams.iter().find(|t| t.id == Some(game.home_team_id)).cloned();
+                                let away = teams.iter().find(|t| t.id == Some(game.away_team_id)).cloned();
+                                let selected = game_tips.iter().find(|t| game.game_id == Some(t.game_id)).and_then(|t| t.team_id);
+                                let radio_name = format!("tip-game-{}", game.game_id.unwrap_or(-1));
                                 html! {
-                                    <li style="margin-bottom: 1em;">
-                                        <span style="margin-right: 1em;">{ format!("{} vs {}", game.home_team_id, game.away_team_id) }</span>
-                                        <label style="margin-right: 1em;">
-                                            <input
-                                                type="radio"
-                                                name={format!("game-{}", game.game_id)}
-                                                checked={selected.as_deref() == Some(&game.home_team_id.to_string())}
-                                                onchange={{
-                                                    let on_tip_select = on_tip_select.clone();
-                                                    let home = game.home_team_id.clone();
-                                                    let id = game.game_id;
-                                                    Callback::from(move |_| on_tip_select.emit((id, home.to_string())))
-                                                }}
-                                            />
-                                            { &game.home_team_id }
-                                        </label>
-                                        <label>
-                                            <input
-                                                type="radio"
-                                                name={format!("game-{}", game.game_id)}
-                                                checked={selected.as_deref() == Some(&game.away_team_id.to_string())}
-                                                onchange={{
-                                                    let on_tip_select = on_tip_select.clone();
-                                                    let away = game.away_team_id.clone();
-                                                    let id = game.game_id;
-                                                    Callback::from(move |_| on_tip_select.emit((id, away.to_string())))
-                                                }}
-                                            />
-                                            { &game.away_team_id }
-                                        </label>
+                                    <li style="margin-bottom: 1rem;">
+                                        <TipSelector
+                                            name={radio_name}
+                                            home_team={home.clone().unwrap()}
+                                            away_team={away.clone().unwrap()}
+                                            selected_team_id={selected}
+                                            on_change={Callback::from({
+                                                let update_tip = update_tip.clone();
+                                                let game_id = game.game_id.unwrap();
+                                                move |team_id| update_tip.emit((game_id, team_id))
+                                            })}
+                                        />
                                     </li>
                                 }
                             })}

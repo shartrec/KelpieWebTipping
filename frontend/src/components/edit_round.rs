@@ -21,7 +21,7 @@
  *      Trevor Campbell
  *
  */
-use crate::components::icon_button::IconButton;
+use crate::components::buttons::IconButton;
 use crate::components::icons::{cancel_icon, delete_icon, games_icon, save_icon};
 use crate::{View, ViewContext};
 use chrono::NaiveDate;

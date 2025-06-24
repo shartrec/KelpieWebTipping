@@ -130,7 +130,7 @@ pub fn cancel_icon() -> Html {
         </svg>
     }
 }
-// Cancel Icon
+// Submit Icon
 pub fn submit_icon() -> Html {
     html! {
         <svg xmlns="http://www.w3.org/2000/svg"
@@ -140,4 +140,17 @@ pub fn submit_icon() -> Html {
             <path d="M22 2L11 13"/>
             <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
         </svg>    }
+}
+
+// Reset Icon
+pub fn reset_icon() -> Html {
+    html! {
+        <svg xmlns="http://www.w3.org/2000/svg"
+             viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+        </svg>
+    }
 }

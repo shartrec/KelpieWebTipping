@@ -615,6 +615,7 @@ dependencies = [
  "chrono",
  "console_log",
  "gloo-net 0.6.0",
+ "gloo-timers 0.3.0",
  "kelpie_models",
  "log",
  "serde",

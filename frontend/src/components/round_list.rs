@@ -27,7 +27,7 @@ use crate::{View, ViewContext};
 use gloo_net::http::Request;
 use kelpie_models::round::Round;
 use yew::prelude::*;
-use crate::components::icon_button::IconButton;
+use crate::components::buttons::IconButton;
 
 #[function_component(RoundList)]
 pub fn round_list() -> Html {

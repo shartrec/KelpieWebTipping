@@ -25,7 +25,7 @@
 mod components;
 
 use crate::components::edit_round::EditRound;
-use crate::components::icon_button::IconButton;
+use crate::components::buttons::IconButton;
 use crate::components::icons::{rounds_icon, teams_icon, tippers_icon, tips_icon};
 use crate::components::round_list::RoundList;
 use crate::components::team_list::TeamList;

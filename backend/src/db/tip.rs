@@ -23,7 +23,7 @@
  */
 use chrono::NaiveDateTime;
 use kelpie_models::tip::Tip;
-use sqlx::PgConnection;
+use sqlx::{PgConnection, Row};
 
 
 pub(crate) async fn delete_by_round(pool: &mut PgConnection, round_id: i32) -> Result<u64, sqlx::Error> {
@@ -35,6 +35,69 @@ pub(crate) async fn delete_by_round(pool: &mut PgConnection, round_id: i32) -> R
         Ok(result) => Ok(result.rows_affected()),
         Err(e) => {
             log::error!("Error deleting game: {}", e);
+            Err(e)
+        }
+    }
+}
+
+pub(crate) async fn insert(pool: &mut PgConnection, tip: &Tip) -> Result<u64, sqlx::Error> {
+    let result = sqlx::query("INSERT INTO tips (tipper_id, game_id, team_id) VALUES ($1, $2, $3)")
+        .bind(tip.tipper_id)
+        .bind(tip.game_id)
+        .bind(tip.team_id)
+        .execute(pool)
+        .await;
+    match result {
+        Ok(result) => Ok(result.rows_affected()),
+        Err(e) => {
+            log::error!("Error inserting tip: {}", e);
+            Err(e)
+        }
+    }
+}
+
+pub(crate) async fn update(pool: &mut PgConnection, tip: &Tip,
+) -> Result<u64, sqlx::Error> {
+    let result = sqlx::query("UPDATE tips SET team_id = $1 WHERE tipper_id = $2 AND game_id = $3")
+        .bind(tip.team_id)
+        .bind(tip.tipper_id)
+        .bind(tip.game_id)
+        .execute(pool)
+        .await;
+
+    match result {
+        Ok(result) => Ok(result.rows_affected()),
+        Err(e) => {
+            log::error!("Error updating tip: {}", e);
+            Err(e)
+        }
+    }
+}
+
+pub(crate) async fn get_by_tipper_and_round(
+    pool: &mut PgConnection,
+    tipper_id: i32,
+    round_id: i32,
+) -> Result<Vec<Tip>, sqlx::Error> {
+    let result = sqlx::query("SELECT tipper_id, game_id, team_id FROM tips WHERE tipper_id = $1 AND game_id IN (SELECT game_id FROM games WHERE round_id = $2)")
+        .bind(tipper_id)
+        .bind(round_id)
+        .fetch_all(pool)
+        .await;
+
+    match result {
+        Ok(rows) => {
+            let tips: Vec<Tip> = rows.into_iter()
+                .map(|row| Tip {
+                    tipper_id: row.get::<i32, _>(0),
+                    game_id: row.get::<i32, _>(1),
+                    team_id: Some(row.get::<i32, _>(2)),
+                })
+                .collect();
+            Ok(tips)
+        }
+        Err(e) => {
+            log::error!("Error fetching tips: {}", e);
             Err(e)
         }
     }

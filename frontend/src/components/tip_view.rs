@@ -105,7 +105,7 @@ pub fn tip_view() -> Html {
 
     html! {
         <div class="content">
-            <div style="display: flex; flex-direction:row; border-bottom: 1px solid #ccc;">
+            <div style="display: flex; flex-direction:row; padding: 10px; border-bottom: 1px solid #ccc;">
                 <h3 style="padding-right: 3rem;">{ "Enter tips" }</h3>
                 {
                     match &*rounds {
@@ -144,8 +144,16 @@ pub fn tip_view() -> Html {
                                         Callback::from(move |_| on_tipper_select.emit(idx))
                                     };
                                     html! {
-                                        <li style={ if is_selected { "font-weight: bold;" } else { "" } }>
-                                            <button onclick={on_click.clone()} class="key-button" style="width: 90%; background: none; border: none; text-align: left;">
+                                        <li style={ if is_selected {
+                                            "font-weight: bold; background: #e0f7fa; border-radius: 4px;"
+                                        } else {
+                                            ""
+                                        } }>
+                                            <button onclick={on_click.clone()} class="key-button" style={ if is_selected {
+                                                "width: 90%; background: #e0f7fa; border: none; text-align: left; font-weight: bold;"
+                                            } else {
+                                                "width: 90%; background: none; border: none; text-align: left;"
+                                            }}>
                                                 { &tipper.name }
                                             </button>
                                         </li>
@@ -170,7 +178,7 @@ pub fn tip_view() -> Html {
                                             let round_id = round.round_id.unwrap_or(0);
                                             let tipper_id = tipper.id.unwrap_or(0);
                                             html! {
-                                                <Tips tipper_id={tipper_id} round={round_id} />
+                                                <Tips tipper_id={tipper_id} round_id={round_id} />
                                             }
                                         } else {
                                             html! { <p>{ "Selected round not found." }</p> }

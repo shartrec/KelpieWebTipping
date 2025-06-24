@@ -32,7 +32,7 @@ use rocket::Route;
 use rocket_db_pools::Connection;
 
 pub(crate) fn routes() -> Vec<Route> {
-    routes![list, add, update, delete]
+    routes![list, add, update, delete, get]
 }
 
 #[get("/api/tippers")]
@@ -74,4 +74,12 @@ pub(crate) async fn update(tipper: Json<Tipper>, mut pool: Connection<DbTips>) -
 pub(crate) async fn delete(id: i32, mut pool: Connection<DbTips>) -> Result<&'static str, ApiError> {
     tipper::delete(&mut **pool, id).await?;
     Ok("OK")
+}
+
+#[get("/api/tippers/<id>")]
+pub(crate) async fn get(id: i32, mut pool: Connection<DbTips>) -> Result<Json<Tipper>, ApiError> {
+    match tipper::get(&mut **pool, id).await? {
+        Some(tipper) => Ok(Json(tipper)),
+        None => Err(ApiError::NotFound("Tipper not found".to_string())),
+    }
 }

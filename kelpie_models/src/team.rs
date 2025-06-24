@@ -30,3 +30,9 @@ pub struct Team {
     pub nickname: String,
     pub can_delete: Option<bool>,
 }
+
+impl PartialEq for Team {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}

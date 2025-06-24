@@ -21,15 +21,11 @@
  *      Trevor Campbell
  *
  */
-use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Tip {
-    pub tip_id: Option<i32>,
-    pub user_id: Option<i32>,
-    pub match_id: Option<i32>,
-    pub predicted_home_score: Option<i32>,
-    pub predicted_away_score: Option<i32>,
-    pub tip_date: Option<NaiveDateTime>,
+    pub tipper_id: i32,
+    pub game_id: i32,
+    pub team_id: Option<i32>,
 }
