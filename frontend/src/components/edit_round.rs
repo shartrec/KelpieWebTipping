@@ -59,7 +59,7 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
         let teams = teams.clone();
         use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                match Request::get("/admin/api/teams")
+                match Request::get("/api/teams")
                     .send()
                     .await
                 {
@@ -84,7 +84,7 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
         use_effect_with((), move |_| {
             if let Some(id) = id {
                 wasm_bindgen_futures::spawn_local(async move {
-                    match Request::get(format!("/admin/api/rounds/{}", id.to_string()).as_str())
+                    match Request::get(format!("/api/rounds/{}", id.to_string()).as_str())
                         .send()
                         .await
                     {
@@ -105,7 +105,7 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                 || ()
             } else {
                 wasm_bindgen_futures::spawn_local(async move {
-                    match Request::get("/admin/api/template_round")
+                    match Request::get("/api/template_round")
                         .send()
                         .await
                     {
@@ -165,11 +165,11 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
 
             wasm_bindgen_futures::spawn_local(async move {
                 let set_error_msg = set_error_msg.clone();
-                let url = "/admin/api/rounds";
+                let url = "/api/rounds";
                 let method = if round_id.is_some() {
                     Request::put(url) // Use PUT for editing
                 } else {
-                    Request::post("/admin/api/rounds") // Use POST for adding
+                    Request::post("/api/rounds") // Use POST for adding
                 };
 
                 match method

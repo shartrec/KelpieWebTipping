@@ -18,7 +18,7 @@ html, body {
     color: var(--primary-color);
     height: 100%;
     margin: 0;
-    padding: 0px;
+    padding: 0;
 }
 
 nav {
@@ -122,7 +122,6 @@ button:disabled {
 .button-group input[type="radio"]:checked + label {
     background: #e0ffe0;
     border: 3px solid #0a0;
-    /*box-shadow: inset 3px 3px 4px rgba(30,100,30,0.8);*/
     font-weight: bold;
 }
 

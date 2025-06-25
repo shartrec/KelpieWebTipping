@@ -43,7 +43,7 @@ pub fn tip_view() -> Html {
         let tippers = tippers.clone();
         use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                let resp = Request::get("admin/api/tippers").send().await;
+                let resp = Request::get("api/tippers").send().await;
                 match resp {
                     Ok(response) => {
                         if let Ok(json) = response.json::<Vec<Tipper>>().await {
@@ -66,7 +66,7 @@ pub fn tip_view() -> Html {
         let rounds = rounds.clone();
         use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                let resp = Request::get("admin/api/rounds").send().await;
+                let resp = Request::get("api/rounds").send().await;
                 match resp {
                     Ok(response) => {
                         if let Ok(json) = response.json::<Vec<Round>>().await {

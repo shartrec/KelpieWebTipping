@@ -51,7 +51,7 @@ pub fn team_list(props: &TeamListProps) -> Html {
         let teams = teams.clone();
         use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(resp) = Request::get("/admin/api/teams").send().await {
+                if let Ok(resp) = Request::get("/api/teams").send().await {
                     if let Ok(data) = resp.json::<Vec<Team>>().await {
                         teams.set(data);
                     }
@@ -78,7 +78,7 @@ pub fn team_list(props: &TeamListProps) -> Html {
                     "nickname": (*nickname).clone(),
                 });
 
-                if let Ok(req) = Request::post("/admin/api/teams")
+                if let Ok(req) = Request::post("/api/teams")
                     .header("Content-Type", "application/json")
                     .body(payload.to_string())
                 {
@@ -130,7 +130,7 @@ pub fn team_list(props: &TeamListProps) -> Html {
             wasm_bindgen_futures::spawn_local(async move {
                 if let Some(id) = *id {
                     let payload = json!({ "id": id, "name": (*name).clone() , "nickname": (*nickname).clone() });
-                    let url = "/admin/api/teams";
+                    let url = "/api/teams";
                     if let Ok(req) = Request::put(&url)
                         .header("Content-Type", "application/json")
                         .body(payload.to_string()) {
@@ -157,7 +157,7 @@ pub fn team_list(props: &TeamListProps) -> Html {
             let teams = teams.clone();
             let set_error_msg = set_error_msg.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                let url = format!("/admin/api/teams/{}", id);
+                let url = format!("/api/teams/{}", id);
                 match Request::delete(&url).send().await {
                     Ok(resp) => {
                         if resp.ok() {

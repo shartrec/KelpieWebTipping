@@ -47,7 +47,7 @@ pub fn tipper_list() -> Html {
         let tippers = tippers.clone();
         use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(resp) = Request::get("/admin/api/tippers").send().await {
+                if let Ok(resp) = Request::get("/api/tippers").send().await {
                     if let Ok(data) = resp.json::<Vec<Tipper>>().await {
                         tippers.set(data);
                     }
@@ -74,7 +74,7 @@ pub fn tipper_list() -> Html {
                     "email": (*email).clone(),
                 });
 
-                if let Ok(req) = Request::post("/admin/api/tippers")
+                if let Ok(req) = Request::post("/api/tippers")
                     .header("Content-Type", "application/json")
                     .body(payload.to_string())
                 {
@@ -128,7 +128,7 @@ pub fn tipper_list() -> Html {
             wasm_bindgen_futures::spawn_local(async move {
                 if let Some(id) = *id {
                     let payload = json!({"id": id, "name": (*name).clone(), "email": (*email).clone()});
-                    let url = "/admin/api/tippers";
+                    let url = "/api/tippers";
                     if let Ok(req) = Request::put(&url)
                         .header("Content-Type", "application/json")
                         .body(payload.to_string()) {
@@ -158,7 +158,7 @@ pub fn tipper_list() -> Html {
                 .unwrap_or(false)
             {
                 wasm_bindgen_futures::spawn_local(async move {
-                    let url = format!("/admin/api/tippers/{}", id);
+                    let url = format!("/api/tippers/{}", id);
                     let resp = Request::delete(&url).send().await;
                     if resp.is_ok() {
                         let updated: Vec<Tipper> = (*tippers).clone().into_iter().filter(|t| t.id.is_some_and(|x| x != id)).collect();

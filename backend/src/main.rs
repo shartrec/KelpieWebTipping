@@ -46,9 +46,9 @@ fn rocket() -> _ {
     let rocket = rocket::build()
         .attach(DbTips::init())
         .mount("/", FileServer::from(relative!("./static")))
-        .mount("/admin", tippers::routes())
-        .mount("/admin", teams::routes())
-        .mount("/admin", rounds::routes())
+        .mount("/", tippers::routes())
+        .mount("/", teams::routes())
+        .mount("/", rounds::routes())
         .mount("/", tips::routes());
     rocket
 }

@@ -21,19 +21,17 @@
  *      Trevor Campbell
  *
  */
+use crate::components::buttons::{IconButton, TipSelector};
+use crate::components::icons::{reset_icon, save_icon};
 use gloo_net::http::Request;
-use log::{debug, warn};
-use serde::Deserialize;
-use yew::prelude::*;
-use yew::html::Scope;
-use yew::virtual_dom::AttrValue;
 use kelpie_models::game::Game;
 use kelpie_models::round::Round;
 use kelpie_models::team::Team;
 use kelpie_models::tip::Tip;
 use kelpie_models::tipper::Tipper;
-use crate::components::buttons::{IconButton, TipSelector};
-use crate::components::icons::{cancel_icon, reset_icon, save_icon};
+use serde::Deserialize;
+use std::collections::HashMap;
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct TipsProps {
@@ -51,30 +49,30 @@ pub struct RoundWithGames {
 fn load_tips(
     tipper_id: i32,
     round_id: i32,
-    round: Option<RoundWithGames>,
-    game_tips: UseStateHandle<Vec<Tip>>,
+    round: &Option<RoundWithGames>,
+    game_tips: UseStateHandle<HashMap<i32, Option<i32>>>,
 ) {
+    let round = round.clone();
     wasm_bindgen_futures::spawn_local(async move {
         let url = format!("/api/tips/{}/{}", tipper_id, round_id);
-        let tips = Request::get(&url).send().await
-            .ok()
-            .and_then(|resp| resp.json::<Vec<Tip>>().await.ok())
-            .unwrap_or_default();
+        let tips = match Request::get(&url).send().await {
+            Ok(resp) => resp.json::<Vec<Tip>>().await.unwrap_or_else(|_| vec![]),
+            Err(_) => vec![],
+        };
 
+        let mut tips_map = HashMap::new();
         if tips.is_empty() {
             if let Some(r) = round {
-                let initial_tips = r.games.iter().map(|g| Tip {
-                    tipper_id,
-                    game_id: g.game_id.unwrap_or(-1),
-                    team_id: None,
-                }).collect();
-                game_tips.set(initial_tips);
-            } else {
-                game_tips.set(vec![]);
+                for g in &r.games {
+                    tips_map.insert(g.game_id.unwrap_or(-1), None);
+                }
             }
         } else {
-            game_tips.set(tips);
+            for tip in tips {
+                tips_map.insert(tip.game_id, tip.team_id);
+            }
         }
+        game_tips.set(tips_map);
     });
 }
 
@@ -82,7 +80,7 @@ fn load_tips(
 pub fn record_tips(props: &TipsProps) -> Html {
     let round = use_state(|| None::<RoundWithGames>);
     let teams = use_state(|| Vec::<Team>::new());
-    let game_tips = use_state(|| Vec::<Tip>::new());
+    let game_tips = use_state(|| HashMap::<i32, Option<i32>>::new());
     let tipper = use_state(|| None::<Tipper>);
     let save_status = use_state(|| None::<String>);
 
@@ -91,33 +89,11 @@ pub fn record_tips(props: &TipsProps) -> Html {
         let teams = teams.clone();
         use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                let data = Request::get("/admin/api/teams")
-                    .send().await
-                    .ok()
-                    .and_then(|resp| resp.json::<Vec<Team>>().await.ok())
-                    .unwrap_or_default();
+                let data = match Request::get("/api/teams").send().await {
+                    Ok(resp) => resp.json::<Vec<Team>>().await.ok().unwrap_or_default(),
+                    Err(_) => vec![],
+                }; // Handle request error
                 teams.set(data);
-            });
-            || ()
-        });
-    }
-
-    // Fetch tipper details and tips when tipper_id changes
-    {
-        let tipper = tipper.clone();
-        let tipper_id = props.tipper_id;
-        let round_id = props.round_id;
-        let round = round.clone();
-        let game_tips = game_tips.clone();
-        use_effect_with(tipper_id, move |&tipper_id| {
-            let tipper = tipper.clone();
-            wasm_bindgen_futures::spawn_local(async move {
-                let data = Request::get(&format!("/admin/api/tippers/{}", tipper_id))
-                    .send().await
-                    .ok()
-                    .and_then(|resp| resp.json::<Tipper>().await.ok());
-                tipper.set(data);
-                load_tips(tipper_id, round_id, (*round).clone(), game_tips.clone());
             });
             || ()
         });
@@ -133,13 +109,33 @@ pub fn record_tips(props: &TipsProps) -> Html {
             let round = round.clone();
             let game_tips = game_tips.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                let new_round = Request::get(&format!("admin/api/rounds/{}", round_id))
-                    .send().await
-                    .ok()
-                    .and_then(|resp| resp.json::<RoundWithGames>().await.ok())
-                    .unwrap_or(RoundWithGames { round: Round::default(), games: vec![] });
-                round.set(Some(new_round.clone()));
-                load_tips(tipper_id, round_id, Some(new_round), game_tips.clone());
+                let new_round = match Request::get(&format!("api/rounds/{}", round_id)).send().await {
+                    Ok(resp) => resp.json::<RoundWithGames>().await.ok(),
+                    Err(_) => Some(RoundWithGames { round: Round::default(), games: vec![] }),
+                };
+                load_tips(tipper_id, round_id, &new_round, game_tips.clone());
+                round.set(new_round.clone());
+            });
+            || ()
+        });
+    }
+
+    // Fetch tipper details and tips when tipper_id changes
+    {
+        let tipper = tipper.clone();
+        let tipper_id = props.tipper_id;
+        let round_id = props.round_id;
+        let round = round.clone();
+        let game_tips = game_tips.clone();
+        use_effect_with(tipper_id, move |&tipper_id| {
+            let tipper = tipper.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                let data = match Request::get(&format!("/api/tippers/{}", tipper_id)).send().await {
+                    Ok(resp) => resp.json::<Tipper>().await.ok(),
+                    Err(_) => None,
+                };
+                tipper.set(data);
+                load_tips(tipper_id, round_id, &round, game_tips.clone());
             });
             || ()
         });
@@ -149,26 +145,18 @@ pub fn record_tips(props: &TipsProps) -> Html {
         let game_tips = game_tips.clone();
         Callback::from(move |(game_id, team_id)| {
             let mut updated = (*game_tips).clone();
-            if let Some(tip) = updated.iter_mut().find(|t| t.game_id == game_id) {
-                tip.team_id = Some(team_id);
-            }
+            updated.insert(game_id, Some(team_id));
             game_tips.set(updated);
         })
     };
 
     let reset_tips = {
+        let tipper_id = props.tipper_id;
+        let round_id = props.round_id;
         let round = round.clone();
         let game_tips = game_tips.clone();
-        let tipper_id = props.tipper_id;
         Callback::from(move |_| {
-            if let Some(r) = &*round {
-                let tips = r.games.iter().map(|g| Tip {
-                    tipper_id,
-                    game_id: g.game_id.unwrap_or(-1),
-                    team_id: None,
-                }).collect();
-                game_tips.set(tips);
-            }
+            load_tips(tipper_id, round_id, &round, game_tips.clone());
         })
     };
 
@@ -182,7 +170,7 @@ pub fn record_tips(props: &TipsProps) -> Html {
             let all_tipped = if let Some(r) = &*round {
                 r.games.iter().all(|g| {
                     let game_id = g.game_id.unwrap_or(-1);
-                    game_tips.iter().any(|t| t.game_id == game_id && t.team_id.is_some())
+                    game_tips.get(&game_id).and_then(|t| *t).is_some()
                 })
             } else {
                 false
@@ -192,7 +180,17 @@ pub fn record_tips(props: &TipsProps) -> Html {
                     .and_then(|w| w.alert_with_message("Please enter a tip for every game.").ok());
                 return;
             }
-            let tips = (*game_tips).clone();
+            let tips: Vec<Tip> = if let Some(r) = &*round {
+                r.games.iter().map(|g| {
+                    Tip {
+                        tipper_id,
+                        game_id: g.game_id.unwrap_or(-1),
+                        team_id: game_tips.get(&g.game_id.unwrap_or(-1)).and_then(|t| *t),
+                    }
+                }).collect()
+            } else {
+                vec![]
+            };
             let save_status = save_status.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 let url = format!("/api/tips/{}/{}", tipper_id, round_id);
@@ -224,7 +222,7 @@ pub fn record_tips(props: &TipsProps) -> Html {
     html! {
         <div>
             <div style="display: flex; align-items: center; gap: 1rem;">
-                <h4 style="flex: 1;">
+                <h4 >
                     {
                         match &*tipper {
                             Some(t) => {
@@ -238,13 +236,15 @@ pub fn record_tips(props: &TipsProps) -> Html {
                         }
                     }
                 </h4>
+               <div style="margin-left: 7rem; display: flex; gap: 0.5rem;">
+                    <IconButton label="Save" onclick={save_tips.clone()}>{ save_icon() }</IconButton>
+                    <IconButton label="Reset" onclick={reset_tips.clone()}>{ reset_icon() }</IconButton>
+                </div>
                 if let Some(msg) = &*save_status {
                     <div style="margin: 0.5rem 0; color: #388e3c; font-weight: bold;">
                         { msg }
                     </div>
                 }
-                <IconButton label="Save" onclick={save_tips.clone()}>{ save_icon() }</IconButton>
-                <IconButton label="Reset" onclick={reset_tips.clone()}>{ reset_icon() }</IconButton>
             </div>
             {
                 match &*round {
@@ -255,7 +255,7 @@ pub fn record_tips(props: &TipsProps) -> Html {
                             { for r.games.iter().map(|game| {
                                 let home = teams.iter().find(|t| t.id == Some(game.home_team_id)).cloned();
                                 let away = teams.iter().find(|t| t.id == Some(game.away_team_id)).cloned();
-                                let selected = game_tips.iter().find(|t| game.game_id == Some(t.game_id)).and_then(|t| t.team_id);
+                                let selected = game_tips.get(&game.game_id.unwrap_or(-1)).and_then(|t| *t);
                                 let radio_name = format!("tip-game-{}", game.game_id.unwrap_or(-1));
                                 html! {
                                     <li style="margin-bottom: 1rem;">

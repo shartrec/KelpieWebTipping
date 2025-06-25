@@ -56,7 +56,7 @@ impl ViewContext {
 
 #[function_component(App)]
 fn app() -> Html {
-    let view = use_state(|| View::Teams);
+    let view = use_state(|| View::Tips);
     let error_msg = use_state(|| None::<String>);
 
     let view_context = ViewContext {
@@ -64,21 +64,10 @@ fn app() -> Html {
         error_msg: error_msg.clone(),
     };
 
-    let set_teams = {
+    // Single set_view callback
+    let set_view = {
         let view_context = view_context.clone();
-        Callback::from(move |_| view_context.set_view(View::Teams))
-    };
-    let set_tippers = {
-        let view_context = view_context.clone();
-        Callback::from(move |_| view_context.set_view(View::Tippers))
-    };
-    let set_rounds = {
-        let view_context = view_context.clone();
-        Callback::from(move |_| view_context.set_view(View::Rounds))
-    };
-    let set_tips = {
-        let view_context = view_context.clone();
-        Callback::from(move |_| view_context.set_view(View::Tips))
+        Callback::from(move |v: View| view_context.set_view(v))
     };
 
     let set_error_msg = {
@@ -91,17 +80,17 @@ fn app() -> Html {
 
             <div class="page-container" style="display: flex;">
                 <nav style="width: 80px; background: #f0f0f0; padding: 16px 0;">
-                    <IconButton label="Teams" onclick={set_teams}>
+                    <IconButton label="Tips" onclick={set_view.reform(|_| View::Tips)}>
+                        { tips_icon() }
+                    </IconButton>
+                    <IconButton label="Teams" onclick={set_view.reform(|_| View::Teams)}>
                         { teams_icon() }
                     </IconButton>
-                    <IconButton label="Tippers" onclick={set_tippers}>
+                    <IconButton label="Tippers" onclick={set_view.reform(|_| View::Tippers)}>
                         { tippers_icon() }
                     </IconButton>
-                    <IconButton label="Rounds" onclick={set_rounds.clone()}>
+                    <IconButton label="Rounds" onclick={set_view.reform(|_| View::Rounds)}>
                         { rounds_icon() }
-                    </IconButton>
-                    <IconButton label="Tips" onclick={set_tips}>
-                        { tips_icon() }
                     </IconButton>
                 </nav>
                 <main class="content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
@@ -120,11 +109,11 @@ fn app() -> Html {
 
                     {
                         match *view {
+                            View::Tips => html! { <TipView /> },
                             View::Teams => html! { <TeamList set_error_msg={set_error_msg.clone()}/> },
                             View::Tippers => html! { <TipperList /> },
                             View::Rounds => html! { <RoundList /> },
                             View::RoundEdit{round_id} => html! { <EditRound set_error_msg={set_error_msg.clone()} round_id={round_id}/> },
-                            View::Tips => html! { <TipView /> },
                         }
                     }
                 </main>
@@ -138,4 +127,3 @@ fn main() {
     console_log::init_with_level(log::Level::Debug).expect("error initializing logger");
     yew::Renderer::<App>::new().render();
 }
-

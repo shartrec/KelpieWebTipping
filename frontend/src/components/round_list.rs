@@ -41,7 +41,7 @@ pub fn round_list() -> Html {
         let rounds = rounds.clone();
         use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(resp) = Request::get("/admin/api/rounds").send().await {
+                if let Ok(resp) = Request::get("/api/rounds").send().await {
                     if let Ok(data) = resp.json::<Vec<Round>>().await {
                         rounds.set(data);
                     }
@@ -67,7 +67,7 @@ pub fn round_list() -> Html {
                 .unwrap_or(false)
             {
                 wasm_bindgen_futures::spawn_local(async move {
-                    let url = format!("/admin/api/rounds/{}", id);
+                    let url = format!("/api/rounds/{}", id);
                     let resp = Request::delete(&url).send().await;
                     if resp.is_ok() {
                         let updated: Vec<Round> = (*rounds).clone().into_iter().filter(|t| t.round_id.unwrap() != id).collect();
