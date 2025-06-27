@@ -39,11 +39,31 @@ pub fn round_list() -> Html {
     // Load rounds
     {
         let rounds = rounds.clone();
+        let error_msg = error_msg.clone();
         use_effect_with((), move |_| {
+            // Clear error on load
+            error_msg.set(None);
             wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(resp) = Request::get("/api/rounds").send().await {
-                    if let Ok(data) = resp.json::<Vec<Round>>().await {
-                        rounds.set(data);
+                match Request::get("/api/rounds").send().await {
+                    Ok(resp) => {
+                        if resp.ok() {
+                            match resp.json::<Vec<Round>>().await {
+                                Ok(data) => {
+                                    rounds.set(data);
+                                    error_msg.set(None); // Clear error on success
+                                }
+                                Err(e) => {
+                                    error_msg.set(Some(format!("Failed to parse rounds: {}", e)));
+                                }
+                            }
+                        } else {
+                            let status = resp.status();
+                            let text = resp.text().await.unwrap_or_default();
+                            error_msg.set(Some(format!("Failed to load rounds ({}): {}", status, text)));
+                        }
+                    }
+                    Err(e) => {
+                        error_msg.set(Some(format!("Error loading rounds: {}", e)));
                     }
                 }
             });
@@ -59,19 +79,34 @@ pub fn round_list() -> Html {
     let delete_round = {
         // Add your delete logic here
         let rounds = rounds.clone();
+        let error_msg = error_msg.clone();
         Callback::from(move |id: i32| {
             let rounds = rounds.clone();
+            let error_msg = error_msg.clone();
             // Show confirm dialog before proceeding
             if web_sys::window()
                 .and_then(|w| w.confirm_with_message("Are you sure you want to delete this round?\nThis will remove all games and tips for the round.").ok())
                 .unwrap_or(false)
             {
+                // Clear error before delete
+                error_msg.set(None);
                 wasm_bindgen_futures::spawn_local(async move {
                     let url = format!("/api/rounds/{}", id);
-                    let resp = Request::delete(&url).send().await;
-                    if resp.is_ok() {
-                        let updated: Vec<Round> = (*rounds).clone().into_iter().filter(|t| t.round_id.unwrap() != id).collect();
-                        rounds.set(updated);
+                    match Request::delete(&url).send().await {
+                        Ok(resp) => {
+                            if resp.ok() {
+                                let updated: Vec<Round> = (*rounds).clone().into_iter().filter(|t| t.round_id.unwrap() != id).collect();
+                                rounds.set(updated);
+                                error_msg.set(None); // Clear error on success
+                            } else {
+                                let status = resp.status();
+                                let text = resp.text().await.unwrap_or_default();
+                                error_msg.set(Some(format!("Delete failed ({}): {}", status, text)));
+                            }
+                        }
+                        Err(e) => {
+                            error_msg.set(Some(format!("Error deleting round: {}", e)));
+                        }
                     }
                 });
             }

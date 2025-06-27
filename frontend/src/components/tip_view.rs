@@ -38,22 +38,30 @@ pub fn tip_view() -> Html {
     let rounds = use_state(|| Option::<Vec<Round>>::None);
     let selected_round = use_state(|| None::<i32>);
 
+    let error_msg = use_state(|| None::<String>);
+
     // Fetch tippers from backend on mount
     {
         let tippers = tippers.clone();
+        let error_msg = error_msg.clone();
         use_effect_with((), move |_| {
+            // Clear error on load
+            error_msg.set(None);
             wasm_bindgen_futures::spawn_local(async move {
                 let resp = Request::get("api/tippers").send().await;
                 match resp {
                     Ok(response) => {
                         if let Ok(json) = response.json::<Vec<Tipper>>().await {
                             tippers.set(Some(json));
+                            error_msg.set(None); // Clear error on success
                         } else {
                             tippers.set(Some(vec![]));
+                            error_msg.set(Some("Failed to parse tippers.".to_string()));
                         }
                     }
-                    Err(_) => {
+                    Err(e) => {
                         tippers.set(Some(vec![]));
+                        error_msg.set(Some(format!("Error loading tippers: {}", e)));
                     }
                 }
             });
@@ -64,19 +72,25 @@ pub fn tip_view() -> Html {
     // Fetch rounds from backend on mount
     {
         let rounds = rounds.clone();
+        let error_msg = error_msg.clone();
         use_effect_with((), move |_| {
+            // Clear error on load
+            error_msg.set(None);
             wasm_bindgen_futures::spawn_local(async move {
                 let resp = Request::get("api/rounds").send().await;
                 match resp {
                     Ok(response) => {
                         if let Ok(json) = response.json::<Vec<Round>>().await {
                             rounds.set(Some(json));
+                            error_msg.set(None); // Clear error on success
                         } else {
                             rounds.set(Some(vec![]));
+                            error_msg.set(Some("Failed to parse rounds.".to_string()));
                         }
                     }
-                    Err(_) => {
+                    Err(e) => {
                         rounds.set(Some(vec![]));
+                        error_msg.set(Some(format!("Error loading rounds: {}", e)));
                     }
                 }
             });
@@ -105,6 +119,9 @@ pub fn tip_view() -> Html {
 
     html! {
         <div class="content">
+            if let Some(msg) = &*error_msg {
+                <div class="alert">{ msg }</div>
+            }
             <div style="display: flex; flex-direction:row; padding: 10px; border-bottom: 1px solid #ccc;">
                 <h3 style="padding-right: 3rem;">{ "Enter tips" }</h3>
                 {

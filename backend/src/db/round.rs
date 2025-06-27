@@ -128,7 +128,7 @@ pub(crate) async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Round
 pub(crate) async fn get_last_round (pool: &mut PgConnection) -> Result<Option<Round>, sqlx::Error> {
     let result = sqlx::query(
         r#"SELECT round_id, round_number, start_date, end_date, bonus_points
-                FROM rounds ORDER BY round_number"#
+                FROM rounds ORDER BY round_number DESC"#
     )
         .fetch_optional(pool)
         .await;

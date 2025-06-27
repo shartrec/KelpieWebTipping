@@ -46,14 +46,36 @@ pub fn team_list(props: &TeamListProps) -> Html {
     let edit_name = use_state(|| String::new());
     let edit_nickname = use_state(|| String::new());
 
+    let error_msg = use_state(|| None::<String>);
+
     // Load teams
     {
         let teams = teams.clone();
+        let error_msg = error_msg.clone();
         use_effect_with((), move |_| {
+            // Clear error on load
+            error_msg.set(None);
             wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(resp) = Request::get("/api/teams").send().await {
-                    if let Ok(data) = resp.json::<Vec<Team>>().await {
-                        teams.set(data);
+                match Request::get("/api/teams").send().await {
+                    Ok(resp) => {
+                        if resp.ok() {
+                            match resp.json::<Vec<Team>>().await {
+                                Ok(data) => {
+                                    teams.set(data);
+                                    error_msg.set(None); // Clear error on success
+                                }
+                                Err(e) => {
+                                    error_msg.set(Some(format!("Failed to parse teams: {}", e)));
+                                }
+                            }
+                        } else {
+                            let status = resp.status();
+                            let text = resp.text().await.unwrap_or_default();
+                            error_msg.set(Some(format!("Failed to load teams ({}): {}", status, text)));
+                        }
+                    }
+                    Err(e) => {
+                        error_msg.set(Some(format!("Error loading teams: {}", e)));
                     }
                 }
             });
@@ -66,11 +88,16 @@ pub fn team_list(props: &TeamListProps) -> Html {
         let name_input = name_input.clone();
         let nickname_input = nickname_input.clone();
         let teams = teams.clone();
+        let error_msg = error_msg.clone();
 
         Callback::from(move |_e: MouseEvent| {
             let name = name_input.clone();
             let nickname = nickname_input.clone();
             let teams = teams.clone();
+            let error_msg = error_msg.clone();
+
+            // Clear error before add
+            error_msg.set(None);
 
             wasm_bindgen_futures::spawn_local(async move {
                 let payload = json!({
@@ -78,19 +105,40 @@ pub fn team_list(props: &TeamListProps) -> Html {
                     "nickname": (*nickname).clone(),
                 });
 
-                if let Ok(req) = Request::post("/api/teams")
+                match Request::post("/api/teams")
                     .header("Content-Type", "application/json")
                     .body(payload.to_string())
                 {
-                    if let Ok(resp) = req.send().await
-                    {
-                        if let Ok(new_team) = resp.json::<Team>().await {
-                            let mut new_list = (*teams).clone();
-                            new_list.push(new_team);
-                            teams.set(new_list);
-                            name.set(String::new());
-                            nickname.set(String::new());
+                    Ok(req) => {
+                        match req.send().await {
+                            Ok(resp) => {
+                                if resp.ok() {
+                                    match resp.json::<Team>().await {
+                                        Ok(new_team) => {
+                                            let mut new_list = (*teams).clone();
+                                            new_list.push(new_team);
+                                            teams.set(new_list);
+                                            name.set(String::new());
+                                            nickname.set(String::new());
+                                            error_msg.set(None); // Clear error on success
+                                        }
+                                        Err(e) => {
+                                            error_msg.set(Some(format!("Failed to parse team: {}", e)));
+                                        }
+                                    }
+                                } else {
+                                    let status = resp.status();
+                                    let text = resp.text().await.unwrap_or_default();
+                                    error_msg.set(Some(format!("Add failed ({}): {}", status, text)));
+                                }
+                            }
+                            Err(e) => {
+                                error_msg.set(Some(format!("Error adding team: {}", e)));
+                            }
                         }
+                    }
+                    Err(e) => {
+                        error_msg.set(Some(format!("Error building request: {}", e)));
                     }
                 }
             });
@@ -121,28 +169,56 @@ pub fn team_list(props: &TeamListProps) -> Html {
         let edit_name = edit_name.clone();
         let edit_nickname = edit_nickname.clone();
         let teams = teams.clone();
+        let error_msg = error_msg.clone();
         Callback::from(move |_| {
             let id = editing_id.clone();
             let name = edit_name.clone();
             let nickname = edit_nickname.clone();
             let teams = teams.clone();
             let editing_id = editing_id.clone();
+            let error_msg = error_msg.clone();
+
+            // Clear error before save
+            error_msg.set(None);
+
             wasm_bindgen_futures::spawn_local(async move {
                 if let Some(id) = *id {
                     let payload = json!({ "id": id, "name": (*name).clone() , "nickname": (*nickname).clone() });
                     let url = "/api/teams";
-                    if let Ok(req) = Request::put(&url)
+                    match Request::put(&url)
                         .header("Content-Type", "application/json")
                         .body(payload.to_string()) {
-                        if let Ok(resp) = req.send().await {
-                            if let Ok(updated) = resp.json::<Team>().await {
-                                let new_list: Vec<Team> = (*teams)
-                                    .iter()
-                                    .map(|t| if t.id.is_some_and(|x| x == id) { updated.clone() } else { t.clone() })
-                                    .collect();
-                                teams.set(new_list);
-                                editing_id.set(None);
+                        Ok(req) => {
+                            match req.send().await {
+                                Ok(resp) => {
+                                    if resp.ok() {
+                                        match resp.json::<Team>().await {
+                                            Ok(updated) => {
+                                                let new_list: Vec<Team> = (*teams)
+                                                    .iter()
+                                                    .map(|t| if t.id.is_some_and(|x| x == id) { updated.clone() } else { t.clone() })
+                                                    .collect();
+                                                teams.set(new_list);
+                                                editing_id.set(None);
+                                                error_msg.set(None); // Clear error on success
+                                            }
+                                            Err(e) => {
+                                                error_msg.set(Some(format!("Failed to parse team: {}", e)));
+                                            }
+                                        }
+                                    } else {
+                                        let status = resp.status();
+                                        let text = resp.text().await.unwrap_or_default();
+                                        error_msg.set(Some(format!("Update failed ({}): {}", status, text)));
+                                    }
+                                }
+                                Err(e) => {
+                                    error_msg.set(Some(format!("Error updating team: {}", e)));
+                                }
                             }
+                        }
+                        Err(e) => {
+                            error_msg.set(Some(format!("Error building request: {}", e)));
                         }
                     }
                 }
@@ -153,15 +229,22 @@ pub fn team_list(props: &TeamListProps) -> Html {
     let delete_team = {
         let teams = teams.clone();
         let set_error_msg = props.set_error_msg.clone();
+        let error_msg = error_msg.clone();
         Callback::from(move |id: i32| {
             let teams = teams.clone();
             let set_error_msg = set_error_msg.clone();
+            let error_msg = error_msg.clone();
+
+            // Clear error before delete
+            error_msg.set(None);
+
             wasm_bindgen_futures::spawn_local(async move {
                 let url = format!("/api/teams/{}", id);
                 match Request::delete(&url).send().await {
                     Ok(resp) => {
                         if resp.ok() {
                             set_error_msg.emit(None);
+                            error_msg.set(None); // Clear error on success
                             let new_list: Vec<Team> = (*teams).clone().into_iter().filter(|t| t.id.is_some_and(|x| x != id)).collect();
                             teams.set(new_list);
                         } else {
@@ -169,16 +252,18 @@ pub fn team_list(props: &TeamListProps) -> Html {
                             match resp.text().await {
                                 Ok(text) => {
                                     set_error_msg.emit(Some(format!("Delete failed ({}): {}", status, text)));
+                                    error_msg.set(Some(format!("Delete failed ({}): {}", status, text)));
                                 }
                                 Err(e) => {
                                     set_error_msg.emit(Some(format!("Delete failed ({}): {}", status, e)));
+                                    error_msg.set(Some(format!("Delete failed ({}): {}", status, e)));
                                 }
                             }
                         }
                     },
                     Err(e) => {
-                        println!("I got an error");
                         set_error_msg.emit(Some(format!("Error: {}", e)));
+                        error_msg.set(Some(format!("Error: {}", e)));
                     }
                 }
             });
@@ -189,6 +274,9 @@ pub fn team_list(props: &TeamListProps) -> Html {
     // Delete team
 html! {
         <div class="content">
+            if let Some(msg) = &*error_msg {
+                <div class="alert">{ msg }</div>
+            }
             <h2>{ "Teams" }</h2>
             <div class="scrollable-table" style="border-right: 1px solid #ccc;">
             <table>

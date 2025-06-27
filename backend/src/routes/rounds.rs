@@ -296,7 +296,7 @@ async fn validate_common(pool: &mut PgConnection, round: &Json<NewRound>)  -> Re
             if !game_teams.insert(id) {
                 let t = team::get(pool, id).await?;
                 let team_name = if let Some(t) = t {
-                    t.name
+                    t.nickname
                 } else {
                     id.to_string()
                 };

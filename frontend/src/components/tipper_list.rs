@@ -42,14 +42,36 @@ pub fn tipper_list() -> Html {
     let edit_name = use_state(|| String::new());
     let edit_email = use_state(|| String::new());
 
+    let error_msg = use_state(|| None::<String>);
+
     // Load tippers on mount
     {
         let tippers = tippers.clone();
+        let error_msg = error_msg.clone();
         use_effect_with((), move |_| {
+            // Clear error on load
+            error_msg.set(None);
             wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(resp) = Request::get("/api/tippers").send().await {
-                    if let Ok(data) = resp.json::<Vec<Tipper>>().await {
-                        tippers.set(data);
+                match Request::get("/api/tippers").send().await {
+                    Ok(resp) => {
+                        if resp.ok() {
+                            match resp.json::<Vec<Tipper>>().await {
+                                Ok(data) => {
+                                    tippers.set(data);
+                                    error_msg.set(None); // Clear error on success
+                                }
+                                Err(e) => {
+                                    error_msg.set(Some(format!("Failed to parse tippers: {}", e)));
+                                }
+                            }
+                        } else {
+                            let status = resp.status();
+                            let text = resp.text().await.unwrap_or_default();
+                            error_msg.set(Some(format!("Failed to load tippers ({}): {}", status, text)));
+                        }
+                    }
+                    Err(e) => {
+                        error_msg.set(Some(format!("Error loading tippers: {}", e)));
                     }
                 }
             });
@@ -62,11 +84,16 @@ pub fn tipper_list() -> Html {
         let name_input = name_input.clone();
         let email_input = email_input.clone();
         let tippers = tippers.clone();
+        let error_msg = error_msg.clone();
 
         Callback::from(move |_e: MouseEvent| {
             let name = name_input.clone();
             let email = email_input.clone();
             let tippers = tippers.clone();
+            let error_msg = error_msg.clone();
+
+            // Clear error before add
+            error_msg.set(None);
 
             wasm_bindgen_futures::spawn_local(async move {
                 let payload = json!({
@@ -74,19 +101,40 @@ pub fn tipper_list() -> Html {
                     "email": (*email).clone(),
                 });
 
-                if let Ok(req) = Request::post("/api/tippers")
+                match Request::post("/api/tippers")
                     .header("Content-Type", "application/json")
                     .body(payload.to_string())
                 {
-                    if let Ok(resp) = req.send().await
-                    {
-                        if let Ok(new_tipper) = resp.json::<Tipper>().await {
-                            let mut new_list = (*tippers).clone();
-                            new_list.push(new_tipper);
-                            tippers.set(new_list);
-                            name.set(String::new());
-                            email.set(String::new());
+                    Ok(req) => {
+                        match req.send().await {
+                            Ok(resp) => {
+                                if resp.ok() {
+                                    match resp.json::<Tipper>().await {
+                                        Ok(new_tipper) => {
+                                            let mut new_list = (*tippers).clone();
+                                            new_list.push(new_tipper);
+                                            tippers.set(new_list);
+                                            name.set(String::new());
+                                            email.set(String::new());
+                                            error_msg.set(None); // Clear error on success
+                                        }
+                                        Err(e) => {
+                                            error_msg.set(Some(format!("Failed to parse tipper: {}", e)));
+                                        }
+                                    }
+                                } else {
+                                    let status = resp.status();
+                                    let text = resp.text().await.unwrap_or_default();
+                                    error_msg.set(Some(format!("Add failed ({}): {}", status, text)));
+                                }
+                            }
+                            Err(e) => {
+                                error_msg.set(Some(format!("Error adding tipper: {}", e)));
+                            }
                         }
+                    }
+                    Err(e) => {
+                        error_msg.set(Some(format!("Error building request: {}", e)));
                     }
                 }
             });
@@ -119,28 +167,56 @@ pub fn tipper_list() -> Html {
         let edit_name = edit_name.clone();
         let edit_email = edit_email.clone();
         let tippers = tippers.clone();
+        let error_msg = error_msg.clone();
         Callback::from(move |_| {
             let id = editing_id.clone();
             let name = edit_name.clone();
             let email = edit_email.clone();
             let tippers = tippers.clone();
             let editing_id = editing_id.clone();
+            let error_msg = error_msg.clone();
+
+            // Clear error before save
+            error_msg.set(None);
+
             wasm_bindgen_futures::spawn_local(async move {
                 if let Some(id) = *id {
                     let payload = json!({"id": id, "name": (*name).clone(), "email": (*email).clone()});
                     let url = "/api/tippers";
-                    if let Ok(req) = Request::put(&url)
+                    match Request::put(&url)
                         .header("Content-Type", "application/json")
                         .body(payload.to_string()) {
-                        if let Ok(resp) = req.send().await {
-                            if let Ok(updated) = resp.json::<Tipper>().await {
-                                let new_list: Vec<Tipper> = (*tippers)
-                                    .iter()
-                                    .map(|t| if t.id.is_some_and(|x| x == id) { updated.clone() } else { t.clone() })
-                                    .collect();
-                                tippers.set(new_list);
-                                editing_id.set(None);
+                        Ok(req) => {
+                            match req.send().await {
+                                Ok(resp) => {
+                                    if resp.ok() {
+                                        match resp.json::<Tipper>().await {
+                                            Ok(updated) => {
+                                                let new_list: Vec<Tipper> = (*tippers)
+                                                    .iter()
+                                                    .map(|t| if t.id.is_some_and(|x| x == id) { updated.clone() } else { t.clone() })
+                                                    .collect();
+                                                tippers.set(new_list);
+                                                editing_id.set(None);
+                                                error_msg.set(None); // Clear error on success
+                                            }
+                                            Err(e) => {
+                                                error_msg.set(Some(format!("Failed to parse tipper: {}", e)));
+                                            }
+                                        }
+                                    } else {
+                                        let status = resp.status();
+                                        let text = resp.text().await.unwrap_or_default();
+                                        error_msg.set(Some(format!("Update failed ({}): {}", status, text)));
+                                    }
+                                }
+                                Err(e) => {
+                                    error_msg.set(Some(format!("Error updating tipper: {}", e)));
+                                }
                             }
+                        }
+                        Err(e) => {
+                            error_msg.set(Some(format!("Error building request: {}", e)));
                         }
                     }
                 }
@@ -150,19 +226,34 @@ pub fn tipper_list() -> Html {
 
     let delete_tipper = {
         let tippers = tippers.clone();
+        let error_msg = error_msg.clone();
         Callback::from(move |id: i32| {
             let tippers = tippers.clone();
+            let error_msg = error_msg.clone();
             // Show confirm dialog before proceeding
             if web_sys::window()
                 .and_then(|w| w.confirm_with_message("Are you sure you want to delete this tipper?\nThis will remove all tipping history for that user.").ok())
                 .unwrap_or(false)
             {
+                // Clear error before delete
+                error_msg.set(None);
                 wasm_bindgen_futures::spawn_local(async move {
                     let url = format!("/api/tippers/{}", id);
-                    let resp = Request::delete(&url).send().await;
-                    if resp.is_ok() {
-                        let updated: Vec<Tipper> = (*tippers).clone().into_iter().filter(|t| t.id.is_some_and(|x| x != id)).collect();
-                        tippers.set(updated);
+                    match Request::delete(&url).send().await {
+                        Ok(resp) => {
+                            if resp.ok() {
+                                let updated: Vec<Tipper> = (*tippers).clone().into_iter().filter(|t| t.id.is_some_and(|x| x != id)).collect();
+                                tippers.set(updated);
+                                error_msg.set(None); // Clear error on success
+                            } else {
+                                let status = resp.status();
+                                let text = resp.text().await.unwrap_or_default();
+                                error_msg.set(Some(format!("Delete failed ({}): {}", status, text)));
+                            }
+                        }
+                        Err(e) => {
+                            error_msg.set(Some(format!("Error deleting tipper: {}", e)));
+                        }
                     }
                 });
             }
@@ -171,6 +262,9 @@ pub fn tipper_list() -> Html {
 
     html! {
         <div class="content">
+            if let Some(msg) = &*error_msg {
+                <div class="alert">{ msg }</div>
+            }
             <h2>{ "Tippers" }</h2>
             <div class="scrollable-table" style="border-right: 1px solid #ccc;">
             <table class="scrollable-list">

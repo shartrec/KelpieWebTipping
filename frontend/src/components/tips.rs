@@ -83,16 +83,23 @@ pub fn record_tips(props: &TipsProps) -> Html {
     let game_tips = use_state(|| HashMap::<i32, Option<i32>>::new());
     let tipper = use_state(|| None::<Tipper>);
     let save_status = use_state(|| None::<String>);
+    let error_msg = use_state(|| None::<String>);
 
     // Fetch teams once
     {
         let teams = teams.clone();
+        let error_msg = error_msg.clone();
         use_effect_with((), move |_| {
+            // Clear error on load
+            error_msg.set(None);
             wasm_bindgen_futures::spawn_local(async move {
                 let data = match Request::get("/api/teams").send().await {
                     Ok(resp) => resp.json::<Vec<Team>>().await.ok().unwrap_or_default(),
-                    Err(_) => vec![],
-                }; // Handle request error
+                    Err(e) => {
+                        error_msg.set(Some(format!("Error loading teams: {}", e)));
+                        vec![]
+                    }
+                };
                 teams.set(data);
             });
             || ()
@@ -105,13 +112,20 @@ pub fn record_tips(props: &TipsProps) -> Html {
         let round_id = props.round_id;
         let tipper_id = props.tipper_id;
         let game_tips = game_tips.clone();
+        let error_msg = error_msg.clone();
         use_effect_with(round_id, move |&round_id| {
+            // Clear error on round change
+            error_msg.set(None);
             let round = round.clone();
             let game_tips = game_tips.clone();
+            let error_msg = error_msg.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 let new_round = match Request::get(&format!("api/rounds/{}", round_id)).send().await {
                     Ok(resp) => resp.json::<RoundWithGames>().await.ok(),
-                    Err(_) => Some(RoundWithGames { round: Round::default(), games: vec![] }),
+                    Err(e) => {
+                        error_msg.set(Some(format!("Error loading round: {}", e)));
+                        Some(RoundWithGames { round: Round::default(), games: vec![] })
+                    }
                 };
                 load_tips(tipper_id, round_id, &new_round, game_tips.clone());
                 round.set(new_round.clone());
@@ -127,12 +141,19 @@ pub fn record_tips(props: &TipsProps) -> Html {
         let round_id = props.round_id;
         let round = round.clone();
         let game_tips = game_tips.clone();
+        let error_msg = error_msg.clone();
         use_effect_with(tipper_id, move |&tipper_id| {
+            // Clear error on tipper change
+            error_msg.set(None);
             let tipper = tipper.clone();
+            let error_msg = error_msg.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 let data = match Request::get(&format!("/api/tippers/{}", tipper_id)).send().await {
                     Ok(resp) => resp.json::<Tipper>().await.ok(),
-                    Err(_) => None,
+                    Err(e) => {
+                        error_msg.set(Some(format!("Error loading tipper: {}", e)));
+                        None
+                    }
                 };
                 tipper.set(data);
                 load_tips(tipper_id, round_id, &round, game_tips.clone());
@@ -166,7 +187,10 @@ pub fn record_tips(props: &TipsProps) -> Html {
         let tipper_id = props.tipper_id;
         let round_id = props.round_id;
         let save_status = save_status.clone();
+        let error_msg = error_msg.clone();
         Callback::from(move |_| {
+            // Clear error before save
+            error_msg.set(None);
             let all_tipped = if let Some(r) = &*round {
                 r.games.iter().all(|g| {
                     let game_id = g.game_id.unwrap_or(-1);
@@ -176,8 +200,7 @@ pub fn record_tips(props: &TipsProps) -> Html {
                 false
             };
             if !all_tipped {
-                web_sys::window()
-                    .and_then(|w| w.alert_with_message("Please enter a tip for every game.").ok());
+                error_msg.set(Some("Please enter a tip for every game.".to_string()));
                 return;
             }
             let tips: Vec<Tip> = if let Some(r) = &*round {
@@ -192,6 +215,7 @@ pub fn record_tips(props: &TipsProps) -> Html {
                 vec![]
             };
             let save_status = save_status.clone();
+            let error_msg = error_msg.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 let url = format!("/api/tips/{}/{}", tipper_id, round_id);
                 let resp = Request::post(&url)
@@ -202,17 +226,19 @@ pub fn record_tips(props: &TipsProps) -> Html {
                 match resp {
                     Ok(r) if r.ok() => {
                         save_status.set(Some("Tips saved!".to_string()));
+                        error_msg.set(None); // Clear error on success
                         let save_status = save_status.clone();
                         gloo_timers::callback::Timeout::new(2000, move || {
                             save_status.set(None);
                         }).forget();
                     }
-                    _ => {
-                        save_status.set(Some("Failed to save tips.".to_string()));
-                        let save_status = save_status.clone();
-                        gloo_timers::callback::Timeout::new(2000, move || {
-                            save_status.set(None);
-                        }).forget();
+                    Ok(r) => {
+                        let status = r.status();
+                        let text = r.text().await.unwrap_or_default();
+                        error_msg.set(Some(format!("Failed to save tips ({}): {}", status, text)));
+                    }
+                    Err(e) => {
+                        error_msg.set(Some(format!("Failed to save tips: {}", e)));
                     }
                 }
             });
@@ -221,6 +247,9 @@ pub fn record_tips(props: &TipsProps) -> Html {
 
     html! {
         <div>
+            if let Some(msg) = &*error_msg {
+                <div class="alert">{ msg }</div>
+            }
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <h4 >
                     {
