@@ -35,7 +35,10 @@ pub(crate) fn routes() -> Vec<Route> {
 pub async fn leaderboard(mut pool: Connection<DbTips>) -> Json<Vec<LeaderboardEntry>> {
     match get_leaderboard(&mut **pool).await {
         Ok(entries) => Json(entries),
-        Err(_) => Json(vec![]), // Handle errors gracefully
+        Err(e) => {
+            error!("Error fetching leaderboard: {}", e);
+            Json(vec![])
+        }, // Handle errors gracefully
     }
 }
 
@@ -43,6 +46,9 @@ pub async fn leaderboard(mut pool: Connection<DbTips>) -> Json<Vec<LeaderboardEn
 pub async fn round(mut pool: Connection<DbTips>, round_id: i32) -> Json<Vec<LeaderboardEntry>> {
     match get_score_by_round(&mut **pool, round_id).await {
         Ok(entries) => Json(entries),
-        Err(_) => Json(vec![]), // Handle errors gracefully
+        Err(e) => {
+            error!("Error fetching leaderboard: {}", e);
+            Json(vec![])
+        }, // Handle errors gracefully
     }
 }
