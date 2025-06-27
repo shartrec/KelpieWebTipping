@@ -154,3 +154,15 @@ pub fn reset_icon() -> Html {
         </svg>
     }
 }
+
+// Leaderboard Icon
+pub fn leaderboard_icon() -> Html {
+    html! {
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="10" width="4" height="11"/>
+            <rect x="10" y="3" width="4" height="18"/>
+            <rect x="17" y="14" width="4" height="7"/>
+        </svg>
+    }
+}

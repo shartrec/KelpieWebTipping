@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS rounds (
     round_id SERIAL PRIMARY KEY,
     round_number INT NOT NULL,
     start_date DATE NOT NULL,
-    end_date DATE NOT NULL
+    end_date DATE NOT NULL,
+    bonus_points INT DEFAULT 0
 );
 
 -- Table to store games

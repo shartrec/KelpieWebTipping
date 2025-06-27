@@ -27,12 +27,12 @@ mod routes;
 mod db;
 mod util;
 
-use crate::routes::{rounds, teams, tips};
 use crate::routes::tippers;
+use crate::routes::{reports, rounds, teams, tips};
 use rocket::fs::{relative, FileServer};
 
-use rocket_db_pools::{sqlx, Database};
 use crate::util::logging::setup_logging;
+use rocket_db_pools::{sqlx, Database};
 
 #[derive(Database)]
 #[database("kelpie_db")]
@@ -49,7 +49,8 @@ fn rocket() -> _ {
         .mount("/", tippers::routes())
         .mount("/", teams::routes())
         .mount("/", rounds::routes())
-        .mount("/", tips::routes());
+        .mount("/", tips::routes())
+        .mount("/reports/", reports::routes());
     rocket
 }
 

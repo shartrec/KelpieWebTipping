@@ -24,8 +24,8 @@
 use std::sync::OnceLock;
 use tracing::level_filters::LevelFilter;
 use tracing_appender::rolling;
-use tracing_subscriber::{fmt, Registry};
 use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::{fmt, Registry};
 
 // Use a global variable to store the guard
 static LOGGING_GUARD: OnceLock<tracing_appender::non_blocking::WorkerGuard> = OnceLock::new();

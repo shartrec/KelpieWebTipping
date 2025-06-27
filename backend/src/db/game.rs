@@ -21,14 +21,12 @@
  *      Trevor Campbell
  *
  */
-use kelpie_models::game::Game;
 use chrono::NaiveDate;
+use kelpie_models::game::Game;
 use log::error;
 use rocket_db_pools::sqlx;
 use rocket_db_pools::sqlx::PgConnection;
 use rocket_db_pools::sqlx::Row;
-
-use rocket::serde::{Deserialize, Serialize};
 
 pub(crate) async fn insert(
     pool: &mut PgConnection,
@@ -68,7 +66,6 @@ pub(crate) async fn insert(
 pub(crate) async fn update(
     pool: &mut PgConnection,
     game_id: i32,
-    round_id: i32,
     home_team_id: i32,
     away_team_id: i32,
     game_date: NaiveDate,
@@ -76,10 +73,9 @@ pub(crate) async fn update(
     away_team_score: Option<i32>,
 ) -> Result<u64, sqlx::Error> {
     let result = sqlx::query(
-        "UPDATE games SET round_id=$1, home_team_id=$2, away_team_id=$3, game_date=$4, \
-         home_team_score=$5, away_team_score=$6 WHERE game_id=$7",
+        "UPDATE games SET home_team_id=$1, away_team_id=$2, game_date=$3, \
+         home_team_score=$4, away_team_score=$5 WHERE game_id=$6",
     )
-        .bind(round_id)
         .bind(home_team_id)
         .bind(away_team_id)
         .bind(game_date)

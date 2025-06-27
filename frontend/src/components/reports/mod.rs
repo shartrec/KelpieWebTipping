@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-2025. Trevor Campbell and others.
+ * Copyright (c) 2025. Trevor Campbell and others.
  *
  * This file is part of KelpieRustWeb.
  *
@@ -22,9 +22,4 @@
  *
  */
 
-pub(crate) mod game;
-pub(crate) mod round;
-pub(crate) mod team;
-pub(crate) mod tipper;
-pub(crate) mod tip;
-pub(crate) mod reporting;
+pub(crate) mod leaderboard;

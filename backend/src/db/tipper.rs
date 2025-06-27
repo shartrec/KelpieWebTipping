@@ -26,7 +26,6 @@ use log::error;
 use rocket_db_pools::sqlx;
 use rocket_db_pools::sqlx::PgConnection;
 use rocket_db_pools::sqlx::Row;
-use serde::{Deserialize, Serialize};
 
 pub(crate) async fn insert(pool: &mut PgConnection, name: String, email: String) -> Result<Tipper, sqlx::Error> {
     let result = sqlx::query("INSERT INTO tippers (name, email) VALUES ($1, $2) RETURNING tipper_id")

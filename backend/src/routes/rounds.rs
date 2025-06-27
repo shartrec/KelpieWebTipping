@@ -21,20 +21,18 @@
  *      Trevor Campbell
  *
  */
-use kelpie_models::round::Round;
-use kelpie_models::team::Team;
 use crate::db::{game, round, team, tip};
 use crate::util::{game_allocator, ApiError};
 use crate::DbTips;
-use chrono::NaiveDate;
+use kelpie_models::game::Game;
+use kelpie_models::round::Round;
+use kelpie_models::team::Team;
 use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::Route;
 use rocket_db_pools::Connection;
 use sqlx::{Acquire, PgConnection};
 use std::ops::Add;
-use tokio::task::id;
-use kelpie_models::game::Game;
 
 pub(crate) fn routes() -> Vec<Route> {
     routes![add_round, list, delete_round, get_round, update_round, template_round]
@@ -65,6 +63,7 @@ pub(crate) async fn add_round(mut pool: Connection<DbTips>, new_round: Json<NewR
         new_round.round.round_number,
         new_round.round.start_date,
         new_round.round.end_date,
+        new_round.round.bonus_points,
     ).await?;
 
     // Insert games
@@ -101,20 +100,63 @@ pub(crate) async fn update_round(mut pool: Connection<DbTips>, new_round: Json<N
         round.round_number,
         round.start_date,
         round.end_date,
+        round.bonus_points,
     ).await?;
 
-    // Replace all games
-    game::delete_by_round(&mut tx, id).await?;
-    for g in &new_round.games {
-        game::insert(
-            &mut tx,
-            id,
-            g.home_team_id,
-            g.away_team_id,
-            g.game_date,
-            None,
-            None,
-        ).await?;
+    // Sophisticated game update logic
+    use std::collections::{HashMap, HashSet};
+
+    // Fetch existing games from DB
+    let existing_games = game::get_for_round(&mut tx, id).await?;
+    let mut existing_games_map: HashMap<Option<i32>, &kelpie_models::game::Game> =
+        existing_games.iter().map(|g| (g.game_id, g)).collect();
+
+    // Map input games by game_id (if present)
+    let mut input_games_map: HashMap<Option<i32>, &Game> =
+        new_round.games.iter().filter(|g| g.game_id.is_some()).map(|g| (g.game_id, g)).collect();
+
+    // Update existing games and collect input game_ids
+    let mut input_game_ids = HashSet::new();
+    for game in &new_round.games {
+        if let Some(game_id) = game.game_id {
+            input_game_ids.insert(game_id);
+            if let Some(_) = existing_games_map.get(&Some(game_id)) {
+                // Update game
+                game::update(
+                    &mut tx,
+                    game_id,
+                    game.home_team_id,
+                    game.away_team_id,
+                    game.game_date,
+                    game.home_team_score,
+                    game.away_team_score,
+                ).await?;
+            }
+        }
+    }
+
+    // Insert new games (those without a game_id)
+    for game in &new_round.games {
+        if game.game_id.is_none() {
+            game::insert(
+                &mut tx,
+                id,
+                game.home_team_id,
+                game.away_team_id,
+                game.game_date,
+                game.home_team_score,
+                game.away_team_score,
+            ).await?;
+        }
+    }
+
+    // Delete games that are in DB but not in input
+    for (game_id, _) in existing_games_map.iter() {
+        if let Some(game_id) = game_id {
+            if !input_game_ids.contains(game_id) {
+                game::delete(&mut tx, *game_id).await?;
+            }
+        }
     }
 
     tx.commit().await?;
@@ -142,16 +184,7 @@ pub(crate) async fn get_round(id: i32, mut pool: Connection<DbTips>) -> Result<J
     let round = round::get(&mut **pool, id).await?;
     if let Some(round) = round {
 
-        let games = game::get_for_round(&mut **pool, id).await?
-            .into_iter().map(|g| Game {
-            game_id: g.game_id,
-            round_id: Some(id),
-            home_team_id: g.home_team_id,
-            away_team_id: g.away_team_id,
-            game_date: g.game_date,
-            home_team_score: None,
-            away_team_score: None,
-        }).collect();
+        let games = game::get_for_round(&mut **pool, id).await?;
 
         let round = NewRound{
             round: round,
@@ -199,6 +232,7 @@ pub(crate) async fn template_round(mut pool: Connection<DbTips>) -> Result<Json<
                 round_number,
                 start_date: start,
                 end_date: end,
+                bonus_points: last_round.bonus_points,
             };
             NewRound {
                 round,

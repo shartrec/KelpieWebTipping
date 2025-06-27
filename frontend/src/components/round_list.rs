@@ -96,6 +96,7 @@ pub fn round_list() -> Html {
                         <th>{ "Round" }</th>
                         <th>{ "From" }</th>
                         <th>{ "To" }</th>
+                        <th>{ "Bonus" }</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -127,6 +128,7 @@ pub fn round_list() -> Html {
                                     <td>{ &round.round_number }</td>
                                     <td>{ &start_date }</td>
                                     <td>{ &end_date }</td>
+                                    <td>{ &round.bonus_points }</td>
                                     <td  class="actions">
                                         <div class="button-row">
                                             <IconButton onclick={do_edit}>

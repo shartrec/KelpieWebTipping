@@ -22,9 +22,9 @@
  *
  */
 use crate::db::team;
-use kelpie_models::team::Team;
 use crate::util::ApiError;
 use crate::DbTips;
+use kelpie_models::team::Team;
 use rocket::serde::json::Json;
 use rocket::Route;
 use rocket_db_pools::Connection;

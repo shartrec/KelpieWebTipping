@@ -30,3 +30,4 @@ pub(crate) mod edit_round;
 pub(crate) mod round_list;
 pub(crate) mod tip_view;
 pub(crate) mod tips;
+pub(crate) mod reports;

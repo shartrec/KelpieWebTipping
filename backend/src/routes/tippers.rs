@@ -23,9 +23,9 @@
  */
 
 use crate::db::tipper;
-use kelpie_models::tipper::Tipper;
 use crate::util::ApiError;
 use crate::DbTips;
+use kelpie_models::tipper::Tipper;
 use rocket::serde::json::Json;
 use rocket::Route;
 

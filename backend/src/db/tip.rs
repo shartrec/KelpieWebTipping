@@ -21,7 +21,6 @@
  *      Trevor Campbell
  *
  */
-use chrono::NaiveDateTime;
 use kelpie_models::tip::Tip;
 use sqlx::{PgConnection, Row};
 
@@ -98,6 +97,21 @@ pub(crate) async fn get_by_tipper_and_round(
         }
         Err(e) => {
             log::error!("Error fetching tips: {}", e);
+            Err(e)
+        }
+    }
+}
+
+pub(crate) async fn exist_for_round(pool: &mut PgConnection, round_id: i32)  -> Result<bool, sqlx::Error> {
+    let result = sqlx::query("SELECT EXISTS (SELECT 1 FROM tips WHERE game_id IN (SELECT game_id FROM games WHERE round_id = $1))")
+        .bind(round_id)
+        .fetch_one(pool)
+        .await;
+
+    match result {
+        Ok(row) => Ok(row.get::<bool, _>(0)),
+        Err(e) => {
+            log::error!("Error checking if tips exist for round: {}", e);
             Err(e)
         }
     }

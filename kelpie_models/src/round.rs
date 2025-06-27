@@ -30,6 +30,7 @@ pub struct Round {
     pub round_number: i32,
     pub start_date: NaiveDate,
     pub end_date: NaiveDate,
+    pub bonus_points: i32,
 }
 
 impl PartialEq for Round {

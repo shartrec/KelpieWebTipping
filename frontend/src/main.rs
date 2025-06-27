@@ -26,7 +26,8 @@ mod components;
 
 use crate::components::edit_round::EditRound;
 use crate::components::buttons::IconButton;
-use crate::components::icons::{rounds_icon, teams_icon, tippers_icon, tips_icon};
+use crate::components::icons::{rounds_icon, teams_icon, tippers_icon, tips_icon, leaderboard_icon};
+use crate::components::reports::leaderboard::Leaderboard;
 use crate::components::round_list::RoundList;
 use crate::components::team_list::TeamList;
 use crate::components::tip_view::TipView;
@@ -40,6 +41,7 @@ enum View {
     Rounds,
     RoundEdit{round_id: Option<i32>},
     Tips,
+    Leaderboard,
 }
 
 #[derive(PartialEq, Clone)]
@@ -79,7 +81,7 @@ fn app() -> Html {
         <ContextProvider<ViewContext> context={view_context}>
 
             <div class="page-container" style="display: flex;">
-                <nav style="width: 80px; background: #f0f0f0; padding: 16px 0;">
+                <nav style="width: 9rem; background: #f0f0f0; padding: 16px 0;">
                     <IconButton label="Tips" onclick={set_view.reform(|_| View::Tips)}>
                         { tips_icon() }
                     </IconButton>
@@ -91,6 +93,9 @@ fn app() -> Html {
                     </IconButton>
                     <IconButton label="Rounds" onclick={set_view.reform(|_| View::Rounds)}>
                         { rounds_icon() }
+                    </IconButton>
+                    <IconButton label="Leaderboard" onclick={set_view.reform(|_| View::Leaderboard)}>
+                        { leaderboard_icon() }
                     </IconButton>
                 </nav>
                 <main class="content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
@@ -114,6 +119,7 @@ fn app() -> Html {
                             View::Tippers => html! { <TipperList /> },
                             View::Rounds => html! { <RoundList /> },
                             View::RoundEdit{round_id} => html! { <EditRound set_error_msg={set_error_msg.clone()} round_id={round_id}/> },
+                            View::Leaderboard => html! { <Leaderboard /> },
                         }
                     }
                 </main>

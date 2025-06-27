@@ -21,17 +21,24 @@
  *      Trevor Campbell
  *
  */
+use crate::db::tip;
+use crate::util::ApiError;
+use crate::DbTips;
+use kelpie_models::tip::Tip;
 use rocket::serde::json::Json;
 use rocket::Route;
 use rocket_db_pools::Connection;
 use sqlx::Acquire;
-use kelpie_models::tip::Tip;
-use crate::db::{game, round, tip};
-use crate::util::ApiError;
-use crate::DbTips;
 
 pub(crate) fn routes() -> Vec<Route> {
-    routes![get_tips_for_round, save_tips_for_round]
+    routes![get_tips_for_round, save_tips_for_round, tips_exist]
+}
+
+#[get("/api/tips/exists/round/<round_id>")]
+pub(crate) async fn tips_exist(round_id: i32, mut pool: Connection<DbTips>,
+) -> Result<Json<bool>, ApiError> {
+    let tips = tip::exist_for_round(&mut **pool,round_id).await?;
+    Ok(Json(tips))
 }
 
 #[get("/api/tips/<tipper_id>/<round_id>")]
@@ -41,10 +48,10 @@ pub(crate) async fn get_tips_for_round(tipper_id: i32, round_id: i32, mut pool: 
     Ok(Json(tips))
 }
 
-#[post("/api/tips/<tipper_id>/<round_id>", data = "<tips>")]
+#[post("/api/tips/<_tipper_id>/<_round_id>", data = "<tips>")]
 pub(crate) async fn save_tips_for_round(
-    tipper_id: i32,
-    round_id: i32,
+    _tipper_id: i32,
+    _round_id: i32,
     mut pool: Connection<DbTips>,
     tips: Json<Vec<Tip>>,
 ) -> Result<&'static str, ApiError> {
@@ -53,11 +60,10 @@ pub(crate) async fn save_tips_for_round(
     // Insert games
     for t in &tips.0 {
         // Try update
-        if let rows_affected = tip::update(&mut tx, t).await? {
-            if rows_affected == 0 {
-                // If no rows were affected, insert
-                tip::insert(&mut tx, t).await?;
-            }
+        let rows_affected = tip::update(&mut tx, t).await?;
+        if rows_affected == 0 {
+            // If no rows were affected, insert
+            tip::insert(&mut tx, t).await?;
         }
     }
     tx.commit().await?;

@@ -22,9 +22,9 @@
  *
  */
 
+use chrono::NaiveDate;
 use kelpie_models::game::Game;
 use kelpie_models::team::Team;
-use chrono::NaiveDate;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::collections::BTreeMap;

@@ -27,8 +27,6 @@ use rocket_db_pools::sqlx;
 use rocket_db_pools::sqlx::PgConnection;
 use rocket_db_pools::sqlx::Row;
 
-use rocket::serde::{Deserialize, Serialize};
-
 pub(crate) async fn insert(pool: &mut PgConnection, name: String, nickname: String) -> Result<Team, sqlx::Error> {
     let result =
         sqlx::query("INSERT INTO teams (name, nickname) VALUES ($1, $2) RETURNING team_id")

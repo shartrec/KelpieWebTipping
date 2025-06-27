@@ -53,6 +53,7 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
     let games = use_state(|| vec![]);
     let teams = use_state(|| Vec::<Team>::new());
     let round_id = props.round_id.clone();
+    let tips_exist = use_state(|| false);
 
     // Fetch the teams when the component mounts
     {
@@ -81,8 +82,10 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
         let round = round.clone();
         let games = games.clone();
         let id = props.round_id.clone();
+        let tips_exist = tips_exist.clone();
         use_effect_with((), move |_| {
             if let Some(id) = id {
+                // Fetch round as before
                 wasm_bindgen_futures::spawn_local(async move {
                     match Request::get(format!("/api/rounds/{}", id.to_string()).as_str())
                         .send()
@@ -99,6 +102,20 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                         }
                         Err(e) => {
                             debug!("Error fetching template round: {}", e);
+                        }
+                    }
+                });
+                // Fetch if tips exist for this round
+                let tips_exist = tips_exist.clone();
+                wasm_bindgen_futures::spawn_local(async move {
+                    match Request::get(&format!("/api/tips/exists/round/{}", id)).send().await {
+                        Ok(resp) => {
+                            if let Ok(exists) = resp.json::<bool>().await {
+                                tips_exist.set(exists);
+                            }
+                        }
+                        Err(_) => {
+                            tips_exist.set(false);
                         }
                     }
                 });
@@ -219,9 +236,12 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
     html! {
         <div>
             <h2>{ h1 }</h2>
-            <div style="display: flex; gap: 1rem;">
-                <input type="number" placeholder="Round Number"
+            <div style="margin-left: 1rem; margin-right: 1rem; display: flex; gap: 1rem; align-items: flex-start;">
+                <input
+                    type="number"
+                    placeholder="Round Number"
                     value={current_round.round_number.to_string()}
+                    style="width: 6ch; min-width: 60px; text-align: start;"
                     oninput={Callback::from({
                         let round = round.clone();
                         move |e: InputEvent| {
@@ -232,8 +252,11 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                         }
                     })}
                 />
-                <input type="date" placeholder="Start Date"
+                <input
+                    type="date"
+                    placeholder="Start Date"
                     value={current_round.start_date.format("%Y-%m-%d").to_string()}
+                    style="width: 17ch; min-width: 110px; text-align: start;"
                     oninput={Callback::from({
                         let round = round.clone();
                         move |e: InputEvent| {
@@ -244,14 +267,32 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                         }
                     })}
                 />
-                <input type="date" placeholder="End Date"
+                <input
+                    type="date"
+                    placeholder="End Date"
                     value={current_round.end_date.format("%Y-%m-%d").to_string()}
+                    style="width: 17ch; min-width: 110px; text-align: start;"
                     oninput={Callback::from({
                         let round = round.clone();
                         move |e: InputEvent| {
                             let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
                             let mut r = (*round).clone();
                             r.round.end_date = NaiveDate::parse_from_str(value.as_str(), "%Y-%m-%d").expect("Invalid date format");
+                            round.set(r);
+                        }
+                    })}
+                />
+                <input
+                    type="number"
+                    placeholder="Bonus Points"
+                    value={current_round.bonus_points.to_string()}
+                    style="width: 7ch; min-width: 70px; text-align: start;"
+                    oninput={Callback::from({
+                        let round = round.clone();
+                        move |e: InputEvent| {
+                            let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
+                            let mut r = (*round).clone();
+                            r.round.bonus_points = value.parse().unwrap_or(0);
                             round.set(r);
                         }
                     })}
@@ -273,15 +314,17 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                         html! {
                         <tr>
                             <td>
-                                <select onchange={Callback::from({
-                                    let games = games.clone();
-                                    move |e: Event| {
-                                        let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
-                                        let mut g = (*games).clone();
-                                        g[i].home_team_id = value.parse().unwrap_or(0);
-                                        games.set(g);
-                                    }
-                                })}>
+                                <select
+                                    disabled={*tips_exist}
+                                    onchange={Callback::from({
+                                        let games = games.clone();
+                                        move |e: Event| {
+                                            let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
+                                            let mut g = (*games).clone();
+                                            g[i].home_team_id = value.parse().unwrap_or(0);
+                                            games.set(g);
+                                        }
+                                    })}>
                                     <option value="" selected={game.home_team_id < 1} disabled=true>{ "Select Home Team" }</option>
                                     { for teams.iter().map(|team| {
                                          let id = team.id.unwrap_or(-1);
@@ -311,15 +354,17 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                                 />
                             </td>
                             <td>
-                                <select onchange={Callback::from({
-                                    let games = games.clone();
-                                    move |e: Event| {
-                                        let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
-                                        let mut g = (*games).clone();
-                                        g[i].away_team_id = value.parse().unwrap_or(0);
-                                        games.set(g);
-                                    }
-                                })}>
+                                <select
+                                    disabled={*tips_exist}
+                                    onchange={Callback::from({
+                                        let games = games.clone();
+                                        move |e: Event| {
+                                            let value = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
+                                            let mut g = (*games).clone();
+                                            g[i].away_team_id = value.parse().unwrap_or(0);
+                                            games.set(g);
+                                        }
+                                    })}>
                                     <option value="" selected={game.away_team_id < 1} disabled=true>{ "Select Away Team" }</option>
                                     { for teams.iter().map(|team| {
                                         let id = team.id.unwrap_or(-1);
@@ -369,7 +414,7 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
                                     <IconButton onclick={Callback::from({
                                         let on_delete_game = on_delete_game.clone();
                                         move |_| on_delete_game.emit(i)
-                                    })} disabled=false>
+                                    })} disabled={*tips_exist}>
                                         { delete_icon() }
                                     </IconButton>
                                 </div>

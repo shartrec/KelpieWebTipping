@@ -21,27 +21,30 @@
  *      Trevor Campbell
  *
  */
-use kelpie_models::round::Round;
 use chrono::NaiveDate;
+use kelpie_models::round::Round;
 use log::error;
-use rocket::serde::{Deserialize, Serialize};
 use sqlx::postgres::PgRow;
 use sqlx::{PgConnection, Row};
 
-pub(crate) async fn insert(pool: &mut PgConnection, round_number: i32, start_date: NaiveDate, end_date: NaiveDate) -> Result<Round, sqlx::Error> {
+pub(crate) async fn insert(pool: &mut PgConnection, round_number: i32,
+                           start_date: NaiveDate, end_date: NaiveDate,
+                           bonus_points: i32 ) -> Result<Round, sqlx::Error> {
     let result = sqlx::query(
-        "INSERT INTO rounds (round_number, start_date, end_date) VALUES ($1, $2, $3) RETURNING round_id",
+        r#"INSERT INTO rounds (round_number, start_date, end_date, bonus_points)
+                VALUES ($1, $2, $3, $4) RETURNING round_id"#,
     )
         .bind(round_number)
         .bind(start_date)
         .bind(end_date)
+        .bind(bonus_points)
         .fetch_one(pool)
         .await;
 
     match result {
         Ok(row) => {
             let id = row.get::<i32, _>(0);
-            Ok(Round{round_id: Some(id), round_number, start_date, end_date})
+            Ok(Round{round_id: Some(id), round_number, start_date, end_date, bonus_points})
         }
         Err(e) => {
             error!("Error inserting round: {}", e);
@@ -50,13 +53,18 @@ pub(crate) async fn insert(pool: &mut PgConnection, round_number: i32, start_dat
     }
 }
 
-pub(crate) async fn update(pool: &mut PgConnection, id: i32, round_number: i32, start_date: NaiveDate, end_date: NaiveDate) -> Result<u64, sqlx::Error> {
+pub(crate) async fn update(pool: &mut PgConnection, id: i32, round_number: i32,
+                           start_date: NaiveDate, end_date: NaiveDate,
+                           bonus_points: i32 ) -> Result<u64, sqlx::Error> {
     let result = sqlx::query(
-        "UPDATE rounds SET round_number=$1, start_date=$2, end_date=$3 WHERE round_id=$4",
-    )
+        r#"UPDATE rounds
+                SET round_number=$1, start_date=$2, end_date=$3, bonus_points=$4
+                WHERE round_id=$5"#,
+        )
         .bind(round_number)
         .bind(start_date)
         .bind(end_date)
+        .bind(bonus_points)
         .bind(id)
         .execute(pool)
         .await;
@@ -90,11 +98,15 @@ fn build_round(row: PgRow) -> Round {
     let round_number = row.get::<i32, _>(1);
     let start_date = row.get::<NaiveDate, _>(2);
     let end_date = row.get::<NaiveDate, _>(3);
-    Round{round_id: Some(round_id), round_number, start_date, end_date}
+    let bonus_points = row.get::<i32, _>(4);
+    Round{round_id: Some(round_id), round_number, start_date, end_date, bonus_points}
 }
 
 pub(crate) async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Round>, sqlx::Error> {
-    let result = sqlx::query("SELECT round_id, round_number, start_date, end_date FROM rounds WHERE round_id=$1")
+    let result = sqlx::query(
+        r#"SELECT round_id, round_number, start_date, end_date, bonus_points
+                FROM rounds WHERE round_id=$1"#
+        )
         .bind(id)
         .fetch_optional(pool)
         .await;
@@ -114,7 +126,10 @@ pub(crate) async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Round
 }
 
 pub(crate) async fn get_last_round (pool: &mut PgConnection) -> Result<Option<Round>, sqlx::Error> {
-    let result = sqlx::query("SELECT round_id, round_number, start_date, end_date FROM rounds ORDER BY round_number DESC LIMIT 1")
+    let result = sqlx::query(
+        r#"SELECT round_id, round_number, start_date, end_date, bonus_points
+                FROM rounds ORDER BY round_number"#
+    )
         .fetch_optional(pool)
         .await;
 
@@ -170,7 +185,10 @@ pub(crate) async fn round_with_number_used (pool: &mut PgConnection, round_id: i
 }
 
 pub(crate) async fn get_all(pool: &mut PgConnection) -> Result<Vec<Round>, sqlx::Error> {
-    let result = sqlx::query("SELECT round_id, round_number, start_date, end_date FROM rounds ORDER BY round_number")
+    let result = sqlx::query(
+        r#"SELECT round_id, round_number, start_date, end_date, bonus_points
+                FROM rounds ORDER BY round_number"#
+        )
         .fetch_all(pool)
         .await;
 

@@ -21,9 +21,28 @@
  *      Trevor Campbell
  *
  */
+use crate::db::reporting::{get_leaderboard, get_score_by_round, LeaderboardEntry};
+use crate::DbTips;
+use rocket::serde::json::Json;
+use rocket::Route;
+use rocket_db_pools::Connection;
 
-pub(crate) mod tippers;
-pub(crate) mod teams;
-pub(crate) mod rounds;
-pub(crate) mod tips;
-pub(crate) mod reports;
+pub(crate) fn routes() -> Vec<Route> {
+    routes![leaderboard, round]
+}
+
+#[get("/leaderboard")]
+pub async fn leaderboard(mut pool: Connection<DbTips>) -> Json<Vec<LeaderboardEntry>> {
+    match get_leaderboard(&mut **pool).await {
+        Ok(entries) => Json(entries),
+        Err(_) => Json(vec![]), // Handle errors gracefully
+    }
+}
+
+#[get("/round/<round_id>")]
+pub async fn round(mut pool: Connection<DbTips>, round_id: i32) -> Json<Vec<LeaderboardEntry>> {
+    match get_score_by_round(&mut **pool, round_id).await {
+        Ok(entries) => Json(entries),
+        Err(_) => Json(vec![]), // Handle errors gracefully
+    }
+}
