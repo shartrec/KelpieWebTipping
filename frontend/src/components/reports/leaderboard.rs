@@ -30,6 +30,8 @@ use kelpie_models::round::Round;
 #[derive(Deserialize, Debug, Clone)]
 struct LeaderboardEntry {
     tipper_name: String,
+    tip_score: i64,
+    bonus_score: i64,
     total_score: i64,
 }
 
@@ -136,6 +138,8 @@ pub(crate) fn leaderboard() -> Html {
                 <thead>
                     <tr>
                         <th>{ "Tipper" }</th>
+                        <th>{ "Game Score" }</th>
+                        <th>{ "Bonus Score" }</th>
                         <th>{ "Total Score" }</th>
                     </tr>
                 </thead>
@@ -143,7 +147,9 @@ pub(crate) fn leaderboard() -> Html {
                     { for leaderboard.iter().map(|entry| html! {
                         <tr>
                             <td>{ &entry.tipper_name }</td>
-                            <td>{ &entry.total_score }</td>
+                            <td>{ &entry.tip_score }</td>
+                            <td>{ &entry.bonus_score }</td>
+                            <td>{ &entry.total_score}</td>
                         </tr>
                     }) }
                 </tbody>

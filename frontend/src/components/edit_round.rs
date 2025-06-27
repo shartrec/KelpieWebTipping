@@ -25,6 +25,7 @@ use crate::components::buttons::IconButton;
 use crate::components::icons::{cancel_icon, delete_icon, games_icon, save_icon};
 use crate::{View, ViewContext};
 use chrono::NaiveDate;
+use futures::join;
 use gloo_net::http::Request;
 use kelpie_models::game::Game;
 use kelpie_models::round::Round;
@@ -85,38 +86,33 @@ pub fn edit_round(props: &EditRoundProps) -> Html {
         let tips_exist = tips_exist.clone();
         use_effect_with((), move |_| {
             if let Some(id) = id {
-                // Fetch round as before
-                wasm_bindgen_futures::spawn_local(async move {
-                    match Request::get(format!("/api/rounds/{}", id.to_string()).as_str())
-                        .send()
-                        .await
-                    {
-                        Ok(response) => {
-                            if let Ok(data) = response.json::<NewRound>().await {
-                                games.set(data.games.clone());
-                                round.set(data);
-                                info!("Fetched round with ID: {}", id);
-                            } else {
-                                debug!("Failed to parse template round response");
-                            }
-                        }
-                        Err(e) => {
-                            debug!("Error fetching template round: {}", e);
-                        }
-                    }
-                });
-                // Fetch if tips exist for this round
+                // Fetch round and tips_exist concurrently
+                let round = round.clone();
+                let games = games.clone();
                 let tips_exist = tips_exist.clone();
                 wasm_bindgen_futures::spawn_local(async move {
-                    match Request::get(&format!("/api/tips/exists/round/{}", id)).send().await {
-                        Ok(resp) => {
-                            if let Ok(exists) = resp.json::<bool>().await {
-                                tips_exist.set(exists);
-                            }
+                    let round_fut = Request::get(format!("/api/rounds/{}", id.to_string()).as_str()).send();
+                    let tips_exist_fut = Request::get(&format!("/api/tips/exists/round/{}", id)).send();
+                    let (round_resp, tips_exist_resp) = join!(round_fut, tips_exist_fut);
+
+                    if let Ok(response) = round_resp {
+                        if let Ok(data) = response.json::<NewRound>().await {
+                            games.set(data.games.clone());
+                            round.set(data);
+                            info!("Fetched round with ID: {}", id);
+                        } else {
+                            debug!("Failed to parse template round response");
                         }
-                        Err(_) => {
-                            tips_exist.set(false);
+                    } else if let Err(e) = round_resp {
+                        debug!("Error fetching template round: {}", e);
+                    }
+
+                    if let Ok(resp) = tips_exist_resp {
+                        if let Ok(exists) = resp.json::<bool>().await {
+                            tips_exist.set(exists);
                         }
+                    } else {
+                        tips_exist.set(false);
                     }
                 });
                 || ()

@@ -1,0 +1,80 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="AngularAmbiguousComponentTag" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularBindingTypeMismatch" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularCliAddDependency" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="AngularDeferBlockOnTrigger" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularForBlockNonIterableVar" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularInaccessibleSymbol" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularIncorrectBlockUsage" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularIncorrectLetUsage" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularIncorrectTemplateDefinition" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularInsecureBindingToEvent" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="AngularInvalidAnimationTriggerAssignment" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularInvalidEntryComponent" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularInvalidI18nAttribute" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="AngularInvalidImportedOrDeclaredSymbol" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularInvalidSelector" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularInvalidTemplateReferenceVariable" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularMissingEventHandler" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularMissingOrInvalidDeclarationInModule" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularMissingRequiredDirectiveInputBinding" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularMultipleStructuralDirectives" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularNgOptimizedImage" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="AngularNonEmptyNgContent" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularNonStandaloneComponentImports" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularRecursiveModuleImportExport" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularUndefinedBinding" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularUndefinedModuleExport" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularUndefinedTag" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularUnresolvedPipe" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularUnsupportedSyntax" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AngularUnusedComponentImport" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="ComposeMissingKeys" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="ComposeUnknownKeys" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="ComposeUnknownValues" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="ComposeUnquotedPorts" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="DevContainerIdeSettings" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="DockerFileAddOrCopyPaths" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="DockerFileArgumentCount" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="DockerFileAssignments" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="DockerFileRunCommandMissingContinuation" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="DockerJsonFormStringLiterals" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="GrazieInspection" enabled="false" level="GRAMMAR_ERROR" enabled_by_default="false" />
+    <inspection_tool class="LanguageDetectionInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="MongoJSDeprecationInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="MongoJSExtDeprecationInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="MongoJSExtResolveInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="MongoJSExtSideEffectsInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="MongoJSResolveInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="MongoJSSideEffectsInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="MsBuiltinInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="MsOrderByInspection" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="MysqlLoadDataPathInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="MysqlParsingInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="MysqlSpaceAfterFunctionNameInspection" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="OraMissingBodyInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="OraOverloadInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="OraUnmatchedForwardDeclarationInspection" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="SassScssResolvedByNameOnly" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="SassScssUnresolvedMixin" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="SassScssUnresolvedPlaceholderSelector" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="SassScssUnresolvedVariable" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="SpellCheckingInspection" enabled="false" level="TYPO" enabled_by_default="false">
+      <option name="processCode" value="true" />
+      <option name="processLiterals" value="true" />
+      <option name="processComments" value="true" />
+    </inspection_tool>
+    <inspection_tool class="VueDataFunction" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="VueDeprecatedSymbol" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="VueDuplicateTag" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="VueMissingComponentImportInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="VueUnrecognizedDirective" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="VueUnrecognizedSlot" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="XsltDeclarations" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="XsltTemplateInvocation" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="XsltUnusedDeclaration" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="XsltVariableShadowing" enabled="false" level="WARNING" enabled_by_default="false" />
+  </profile>
+</component>
