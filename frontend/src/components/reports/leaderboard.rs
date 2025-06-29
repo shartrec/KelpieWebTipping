@@ -26,6 +26,12 @@ use log::debug;
 use yew::prelude::*;
 use serde::Deserialize;
 use kelpie_models::round::Round;
+use web_sys::{js_sys, Blob, Url};
+use wasm_bindgen::JsCast;
+use wasm_bindgen::JsValue;
+use gloo_utils::document;
+use crate::components::buttons::IconButton;
+use crate::components::icons::{csv_icon, save_icon};
 
 #[derive(Deserialize, Debug, Clone)]
 struct LeaderboardEntry {
@@ -108,6 +114,41 @@ pub(crate) fn leaderboard() -> Html {
         })
     };
 
+    // Export leaderboard to CSV (Excel-compatible)
+    let export_to_excel = {
+        let leaderboard = leaderboard.clone();
+        Callback::from(move |_| {
+            let mut csv = String::from("Tipper,Game Score,Bonus Score,Total Score\n");
+            for entry in leaderboard.iter() {
+                csv.push_str(&format!(
+                    "\"{}\",{},{},{}\n",
+                    entry.tipper_name.replace('"', "\"\""),
+                    entry.tip_score,
+                    entry.bonus_score,
+                    entry.total_score
+                ));
+            }
+
+            // Create a Blob and trigger download
+            let window = web_sys::window().unwrap();
+            let array = js_sys::Array::new();
+            array.push(&JsValue::from_str(&csv));
+            let blob = Blob::new_with_str_sequence(&array).unwrap();
+            let url = Url::create_object_url_with_blob(&blob).unwrap();
+
+            let document = document();
+            let a = document.create_element("a").unwrap();
+            a.set_attribute("href", &url).unwrap();
+            a.set_attribute("download", "leaderboard.csv").unwrap();
+            a.set_attribute("style", "display: none;").unwrap();
+            document.body().unwrap().append_child(&a).unwrap();
+            let a_html = a.dyn_ref::<web_sys::HtmlElement>().unwrap();
+            a_html.click();
+            document.body().unwrap().remove_child(&a).unwrap();
+            Url::revoke_object_url(&url).unwrap();
+        })
+    };
+
     html! {
         <div>
             <h1>{ "Competition Leaderboard" }</h1>
@@ -132,6 +173,13 @@ pub(crate) fn leaderboard() -> Html {
                         }
                     }
                 }
+                <IconButton
+                    label={Some("Export".to_string())}
+                    onclick={export_to_excel}
+                    disabled={false}
+                >
+                    { csv_icon() }
+                </IconButton>
             </div>
             <a href="/" style="display: inline-block; margin-bottom: 1rem;">{ "Back to Main Page" }</a>
             <table>

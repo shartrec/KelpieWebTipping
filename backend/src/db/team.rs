@@ -21,6 +21,7 @@
  *      Trevor Campbell
  *
  */
+#![allow(unused)]
 use kelpie_models::team::Team;
 use log::error;
 use rocket_db_pools::sqlx;
@@ -76,6 +77,19 @@ pub(crate) async fn delete(pool: &mut PgConnection, id: i32) -> Result<u64, sqlx
     }
 }
 
+fn from_row(row: &sqlx::postgres::PgRow) -> Team {
+    let id = row.get::<i32, _>(0);
+    let name = row.get::<String, _>(1);
+    let nickname = row.get::<String, _>(2);
+    // can_delete is optional, only present in some queries
+    let can_delete = if row.len() > 3 {
+        Some(!row.get::<bool, _>(3))
+    } else {
+        None
+    };
+    Team { id: Some(id), name, nickname, can_delete }
+}
+
 pub(crate) async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Team>, sqlx::Error> {
     let result = sqlx::query(
         "SELECT team_id, name, nickname FROM teams WHERE team_id = $1")
@@ -84,12 +98,7 @@ pub(crate) async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Team>
         .await;
     match result {
         Ok(row) => match row {
-            Some(row) => {
-                let id = row.get::<i32, _>(0);
-                let name = row.get::<String, _>(1);
-                let nickname = row.get::<String, _>(2);
-                Ok(Some(Team { id: Some(id), name, nickname , can_delete: None}))
-            }
+            Some(row) => Ok(Some(from_row(&row))),
             None => Ok(None),
         },
         Err(e) => {
@@ -108,14 +117,7 @@ pub(crate) async fn get_all(pool: &mut PgConnection) -> Result<Vec<Team>, sqlx::
         .await;
     match result {
         Ok(rows) => {
-            let mut teams = Vec::new();
-            for row in rows {
-                let id = row.get::<i32, _>(0);
-                let name = row.get::<String, _>(1);
-                let nickname = row.get::<String, _>(2);
-                let can_delete = Some(!row.get::<bool, _>(3));
-                teams.push(Team { id: Some(id), name, nickname, can_delete});
-            }
+            let teams = rows.into_iter().map(|row| from_row(&row)).collect();
             Ok(teams)
         }
         Err(e) => {

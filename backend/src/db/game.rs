@@ -21,6 +21,7 @@
  *      Trevor Campbell
  *
  */
+#![allow(unused)]
 use chrono::NaiveDate;
 use kelpie_models::game::Game;
 use log::error;
@@ -108,6 +109,18 @@ pub(crate) async fn delete(pool: &mut PgConnection, game_id: i32) -> Result<u64,
     }
 }
 
+fn from_row(row: &sqlx::postgres::PgRow) -> Game {
+    Game {
+        game_id: Some(row.get::<i32, _>(0)),
+        round_id: Some(row.get::<i32, _>(1)),
+        home_team_id: row.get::<i32, _>(2),
+        away_team_id: row.get::<i32, _>(3),
+        game_date: row.get::<NaiveDate, _>(4),
+        home_team_score: row.get::<Option<i32>, _>(5),
+        away_team_score: row.get::<Option<i32>, _>(6),
+    }
+}
+
 pub(crate) async fn get(pool: &mut PgConnection, game_id: i32) -> Result<Option<Game>, sqlx::Error> {
     let result = sqlx::query(
         "SELECT game_id, round_id, home_team_id, away_team_id, game_date, home_team_score, away_team_score \
@@ -119,24 +132,7 @@ pub(crate) async fn get(pool: &mut PgConnection, game_id: i32) -> Result<Option<
 
     match result {
         Ok(row) => match row {
-            Some(row) => {
-                let id = row.get::<i32, _>(0);
-                let round_id = row.get::<i32, _>(1);
-                let home_team_id = row.get::<i32, _>(2);
-                let away_team_id = row.get::<i32, _>(3);
-                let game_date = row.get::<NaiveDate, _>(4);
-                let home_team_score = row.get::<Option<i32>, _>(5);
-                let away_team_score = row.get::<Option<i32>, _>(6);
-                Ok(Some(Game {
-                    game_id: Some(id),
-                    round_id: Some(round_id),
-                    home_team_id,
-                    away_team_id,
-                    game_date,
-                    home_team_score,
-                    away_team_score,
-                }))
-            }
+            Some(row) => Ok(Some(from_row(&row))),
             None => Ok(None),
         },
         Err(e) => {
@@ -157,27 +153,7 @@ pub(crate) async fn get_for_round(pool: &mut PgConnection, round_id: i32) -> Res
 
     match result {
         Ok(rows) => {
-            let games = rows
-                .into_iter()
-                .map(|row| {
-                    let id = row.get::<i32, _>(0);
-                    let round_id = row.get::<i32, _>(1);
-                    let home_team_id = row.get::<i32, _>(2);
-                    let away_team_id = row.get::<i32, _>(3);
-                    let game_date = row.get::<NaiveDate, _>(4);
-                    let home_team_score = row.get::<Option<i32>, _>(5);
-                    let away_team_score = row.get::<Option<i32>, _>(6);
-                    Game {
-                        game_id: Some(id),
-                        round_id: Some(round_id),
-                        home_team_id,
-                        away_team_id,
-                        game_date,
-                        home_team_score,
-                        away_team_score,
-                    }
-                })
-                .collect();
+            let games = rows.into_iter().map(|row| from_row(&row)).collect();
             Ok(games)
         }
         Err(e) => {
@@ -197,28 +173,7 @@ pub(crate) async fn get_all(pool: &mut PgConnection) -> Result<Vec<Game>, sqlx::
 
     match result {
         Ok(rows) => {
-            let games = rows
-                .into_iter()
-                .map(|row| {
-                    let id = row.get::<i32, _>(0);
-                    let round_id = row.get::<i32, _>(1);
-                    let home_team_id = row.get::<i32, _>(2);
-                    let away_team_id = row.get::<i32, _>(3);
-                    let game_date = row.get::<NaiveDate, _>(4);
-                    let home_team_score = row.get::<Option<i32>, _>(5);
-                    let away_team_score = row.get::<Option<i32>, _>(6);
-                    Game {
-                        game_id: Some(id),
-                        round_id: Some(round_id),
-                        home_team_id,
-                        away_team_id,
-                        game_date,
-                        home_team_score,
-                        away_team_score,
-                    }
-
-                })
-                .collect();
+            let games = rows.into_iter().map(|row| from_row(&row)).collect();
             Ok(games)
         }
         Err(e) => {

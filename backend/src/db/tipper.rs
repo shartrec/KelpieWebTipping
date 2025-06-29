@@ -21,11 +21,13 @@
  *      Trevor Campbell
  *
  */
+#![allow(unused)]
 use kelpie_models::tipper::Tipper;
 use log::error;
 use rocket_db_pools::sqlx;
 use rocket_db_pools::sqlx::PgConnection;
 use rocket_db_pools::sqlx::Row;
+use sqlx::postgres::PgRow;
 
 pub(crate) async fn insert(pool: &mut PgConnection, name: String, email: String) -> Result<Tipper, sqlx::Error> {
     let result = sqlx::query("INSERT INTO tippers (name, email) VALUES ($1, $2) RETURNING tipper_id")
@@ -85,10 +87,8 @@ pub(crate) async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Tippe
     match result {
         Ok(row) =>  match row {
                 Some(row) => {
-                    let tipper_id = row.get::<i32, _>(0);
-                    let name = row.get::<String, _>(1);
-                    let email = row.get::<String, _>(2);
-                    Ok(Some(Tipper { id: Some(tipper_id), name, email}))
+                    let tipper = from_row(row);
+                    Ok(Some(tipper))
                 }
                 None => Ok(None),
             }
@@ -97,6 +97,14 @@ pub(crate) async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Tippe
             Err(e)
         },
     }
+}
+
+fn from_row(row: PgRow) -> Tipper {
+    let tipper_id = row.get::<i32, _>(0);
+    let name = row.get::<String, _>(1);
+    let email = row.get::<String, _>(2);
+    let tipper = Tipper { id: Some(tipper_id), name, email };
+    tipper
 }
 
 pub(crate) async fn get_all(pool: &mut PgConnection) -> Result<Vec<Tipper>, sqlx::Error> {
@@ -108,10 +116,7 @@ pub(crate) async fn get_all(pool: &mut PgConnection) -> Result<Vec<Tipper>, sqlx
         Ok(rows) => {
             let mut tippers = Vec::new();
             for row in rows {
-                let tipper_id = row.get::<i32, _>(0);
-                let name = row.get::<String, _>(1);
-                let email = row.get::<String, _>(2);
-                tippers.push(Tipper { id: Some(tipper_id), name, email});
+                tippers.push(from_row(row));
             }
             Ok(tippers)
         },

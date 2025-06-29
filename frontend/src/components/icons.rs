@@ -166,3 +166,15 @@ pub fn leaderboard_icon() -> Html {
         </svg>
     }
 }
+
+// CSV Icon
+pub fn csv_icon() -> Html {
+    html! {
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <text x="7" y="17" font-size="8" fill="currentColor" font-family="monospace">{"CSV"}</text>
+            <line x1="3" y1="7" x2="21" y2="7"/>
+        </svg>
+    }
+}

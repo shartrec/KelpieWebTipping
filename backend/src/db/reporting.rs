@@ -21,6 +21,7 @@
  *      Trevor Campbell
  *
  */
+#![allow(unused)]
 use rocket::serde::Serialize;
 use sqlx::PgConnection;
 

@@ -21,6 +21,7 @@
  *      Trevor Campbell
  *
  */
+#![allow(unused)]
 use chrono::NaiveDate;
 use kelpie_models::round::Round;
 use log::error;
@@ -93,7 +94,7 @@ pub(crate) async fn delete(pool: &mut PgConnection, id: i32) -> Result<u64, sqlx
     }
 }
 
-fn build_round(row: PgRow) -> Round {
+fn from_row(row: PgRow) -> Round {
     let round_id = row.get::<i32, _>(0);
     let round_number = row.get::<i32, _>(1);
     let start_date = row.get::<NaiveDate, _>(2);
@@ -114,7 +115,7 @@ pub(crate) async fn get(pool: &mut PgConnection, id: i32) -> Result<Option<Round
     match result {
         Ok(row) => match row {
             Some(row) => {
-                Ok(Some(build_round(row)))
+                Ok(Some(from_row(row)))
             }
             None => Ok(None),
         },
@@ -136,7 +137,7 @@ pub(crate) async fn get_last_round (pool: &mut PgConnection) -> Result<Option<Ro
     match result {
         Ok(row) => match row {
             Some(row) => {
-                Ok(Some(build_round(row)))
+                Ok(Some(from_row(row)))
             }
             None => Ok(None),
         },
@@ -196,7 +197,7 @@ pub(crate) async fn get_all(pool: &mut PgConnection) -> Result<Vec<Round>, sqlx:
         Ok(rows) => {
             let mut rounds = Vec::new();
             for row in rows {
-                rounds.push(build_round(row));
+                rounds.push(from_row(row));
             }
             Ok(rounds)
         }

@@ -21,9 +21,10 @@
  *      Trevor Campbell
  *
  */
+#![allow(unused)]
 use kelpie_models::tip::Tip;
 use sqlx::{PgConnection, Row};
-
+use sqlx::postgres::PgRow;
 
 pub(crate) async fn delete_by_round(pool: &mut PgConnection, round_id: i32) -> Result<u64, sqlx::Error> {
     let result = sqlx::query("DELETE FROM tips WHERE game_id in (select game_id from games where round_id=$1)")
@@ -87,11 +88,7 @@ pub(crate) async fn get_by_tipper_and_round(
     match result {
         Ok(rows) => {
             let tips: Vec<Tip> = rows.into_iter()
-                .map(|row| Tip {
-                    tipper_id: row.get::<i32, _>(0),
-                    game_id: row.get::<i32, _>(1),
-                    team_id: Some(row.get::<i32, _>(2)),
-                })
+                .map(|row| from_row(row))
                 .collect();
             Ok(tips)
         }
@@ -102,7 +99,15 @@ pub(crate) async fn get_by_tipper_and_round(
     }
 }
 
-pub(crate) async fn exist_for_round(pool: &mut PgConnection, round_id: i32)  -> Result<bool, sqlx::Error> {
+fn from_row(row: PgRow) -> Tip {
+    Tip {
+        tipper_id: row.get::<i32, _>(0),
+        game_id: row.get::<i32, _>(1),
+        team_id: Some(row.get::<i32, _>(2)),
+    }
+}
+
+pub(crate) async fn exist_for_round(pool: &mut PgConnection, round_id: i32) -> Result<bool, sqlx::Error> {
     let result = sqlx::query("SELECT EXISTS (SELECT 1 FROM tips WHERE game_id IN (SELECT game_id FROM games WHERE round_id = $1))")
         .bind(round_id)
         .fetch_one(pool)

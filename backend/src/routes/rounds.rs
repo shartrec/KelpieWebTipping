@@ -108,12 +108,8 @@ pub(crate) async fn update_round(mut pool: Connection<DbTips>, new_round: Json<N
 
     // Fetch existing games from DB
     let existing_games = game::get_for_round(&mut tx, id).await?;
-    let mut existing_games_map: HashMap<Option<i32>, &kelpie_models::game::Game> =
+    let existing_games_map: HashMap<Option<i32>, &kelpie_models::game::Game> =
         existing_games.iter().map(|g| (g.game_id, g)).collect();
-
-    // Map input games by game_id (if present)
-    let mut input_games_map: HashMap<Option<i32>, &Game> =
-        new_round.games.iter().filter(|g| g.game_id.is_some()).map(|g| (g.game_id, g)).collect();
 
     // Update existing games and collect input game_ids
     let mut input_game_ids = HashSet::new();
@@ -187,8 +183,8 @@ pub(crate) async fn get_round(id: i32, mut pool: Connection<DbTips>) -> Result<J
         let games = game::get_for_round(&mut **pool, id).await?;
 
         let round = NewRound{
-            round: round,
-            games: games,
+            round,
+            games,
         };
         Ok(Json(round))
     } else {
